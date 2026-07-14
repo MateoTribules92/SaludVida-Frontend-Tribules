@@ -10,7 +10,8 @@ public class HomeController {
 	
 	@GetMapping
 	 public String index() {
-        return "/index/home";
+        return "/index/home"; //ruta de la carpeta
     }
 
+	
 }
