@@ -1,10 +1,178 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
-</head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{plantilla/layout :: head('Productos - SaludVida')}"></head>
 <body>
+<div id="overlay" class="overlay"></div>
+<nav th:replace="~{plantilla/layout :: topbar}"></nav>
+<aside th:replace="~{plantilla/layout :: sidebar}"></aside>
 
+<main id="content" class="content py-10">
+  <div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="fs-3 mb-1">Productos</h1>
+        <p class="text-secondary mb-0">Administra el catalogo de productos, caducidad y estado comercial.</p>
+      </div>
+      <span class="badge bg-primary-subtle text-primary">Catalogo</span>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card p-3 bg-danger bg-opacity-10 border-danger border-opacity-25">
+          <span class="text-secondary small">Productos vencidos</span>
+          <strong class="fs-4 text-danger" th:text="${totalVencidos}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 bg-warning bg-opacity-10 border-warning border-opacity-25">
+          <span class="text-secondary small">Proximos a caducar 30 dias</span>
+          <strong class="fs-4 text-warning" th:text="${totalProximos}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 bg-success bg-opacity-10 border-success border-opacity-25">
+          <span class="text-secondary small">Productos registrados</span>
+          <strong class="fs-4 text-success" th:text="${#lists.size(productos)}">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h2 class="h5 mb-1" th:text="${editando} ? 'Editar producto' : 'Nuevo producto'">Nuevo producto</h2>
+          <p class="text-secondary small mb-0">Reglas: categoria/proveedor activos, precio mayor a cero y fecha vigente.</p>
+        </div>
+        <a th:if="${editando}" href="/productos" class="btn btn-sm btn-outline-secondary">Cancelar edicion</a>
+      </div>
+
+      <form method="post"
+            th:action="${editando} ? @{/productos/{id}(id=${editId})} : @{/productos}"
+            th:object="${request}"
+            class="row g-3"
+            novalidate>
+
+        <div class="col-md-3">
+          <label class="form-label">Codigo</label>
+          <input class="form-control" th:classappend="${#fields.hasErrors('codigo')} ? 'is-invalid'" th:field="*{codigo}" placeholder="MED-001">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('codigo')}" th:errors="*{codigo}"></div>
+        </div>
+
+        <div class="col-md-5">
+          <label class="form-label">Nombre</label>
+          <input class="form-control" th:classappend="${#fields.hasErrors('nombre')} ? 'is-invalid'" th:field="*{nombre}" placeholder="Paracetamol 500mg">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}"></div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Precio</label>
+          <input type="number" step="0.01" min="0.01" class="form-control" th:classappend="${#fields.hasErrors('precio')} ? 'is-invalid'" th:field="*{precio}" placeholder="1.50">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('precio')}" th:errors="*{precio}"></div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Categoria</label>
+          <select class="form-select" th:classappend="${#fields.hasErrors('idCategoria')} ? 'is-invalid'" th:field="*{idCategoria}">
+            <option value="0">Seleccione...</option>
+            <option th:each="c : ${categorias}" th:value="${c.idCategoria}" th:text="${c.nombre}"></option>
+          </select>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('idCategoria')}" th:errors="*{idCategoria}"></div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Proveedor</label>
+          <select class="form-select" th:classappend="${#fields.hasErrors('idProveedor')} ? 'is-invalid'" th:field="*{idProveedor}">
+            <option value="0">Seleccione...</option>
+            <option th:each="p : ${proveedores}" th:value="${p.idProveedor}" th:text="${p.nombre}"></option>
+          </select>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('idProveedor')}" th:errors="*{idProveedor}"></div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Fecha de caducidad</label>
+          <input type="date" class="form-control" th:classappend="${#fields.hasErrors('fechaCaducidad')} ? 'is-invalid'" th:field="*{fechaCaducidad}">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('fechaCaducidad')}" th:errors="*{fechaCaducidad}"></div>
+        </div>
+
+        <div class="col-md-10">
+          <label class="form-label">Descripcion</label>
+          <input class="form-control" th:classappend="${#fields.hasErrors('descripcion')} ? 'is-invalid'" th:field="*{descripcion}" placeholder="Descripcion breve del producto">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('descripcion')}" th:errors="*{descripcion}"></div>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100" type="submit" th:text="${editando} ? 'Actualizar' : 'Guardar'">Guardar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center px-4 py-3">
+        <h3 class="h5 mb-0">Listado de productos</h3>
+        <span class="text-secondary small" th:text="${#lists.size(productos)} + ' registros'">0 registros</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Codigo</th>
+            <th>Nombre</th>
+            <th>Categoria</th>
+            <th>Proveedor</th>
+            <th>Precio</th>
+            <th>Caducidad</th>
+            <th>Estado</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="item : ${productos}">
+            <td th:text="${item.idProducto}">1</td>
+            <td class="fw-semibold" th:text="${item.codigo}">MED-001</td>
+            <td th:text="${item.nombre}">Producto</td>
+            <td th:text="${nombresCategorias[item.idCategoria] != null ? nombresCategorias[item.idCategoria] : 'Categoria no encontrada'}">Categoria</td>
+            <td th:text="${nombresProveedores[item.idProveedor] != null ? nombresProveedores[item.idProveedor] : 'Proveedor no encontrado'}">Proveedor</td>
+            <td th:text="${item.precio}">0.00</td>
+            <td>
+              <span th:text="${item.fechaCaducidad}">2026-12-31</span>
+              <span th:if="${item.fechaCaducidad != null and item.fechaCaducidad.isBefore(hoy)}" class="badge bg-danger-subtle text-danger ms-1">Vencido</span>
+              <span th:if="${item.fechaCaducidad != null and !item.fechaCaducidad.isBefore(hoy) and !item.fechaCaducidad.isAfter(limiteCaducidad)}" class="badge bg-warning-subtle text-warning ms-1">Por caducar</span>
+              <span th:if="${item.fechaCaducidad != null and item.fechaCaducidad.isAfter(limiteCaducidad)}" class="badge bg-success-subtle text-success ms-1">Vigente</span>
+            </td>
+            <td>
+              <span th:if="${item.activo}" class="badge bg-success-subtle text-success">Activo</span>
+              <span th:if="${!item.activo}" class="badge bg-secondary-subtle text-secondary">Inactivo</span>
+            </td>
+            <td class="text-end text-nowrap">
+              <a th:href="@{/productos/{id}/editar(id=${item.idProducto})}" class="btn btn-sm btn-outline-primary">Editar</a>
+
+              <form th:if="${item.activo}" th:action="@{/productos/{id}/desactivar(id=${item.idProducto})}" method="post" class="d-inline">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Desactivar</button>
+              </form>
+
+              <form th:if="${!item.activo}" th:action="@{/productos/{id}/activar(id=${item.idProducto})}" method="post" class="d-inline">
+                <button class="btn btn-sm btn-outline-success" type="submit">Activar</button>
+              </form>
+            </td>
+          </tr>
+
+          <tr th:if="${#lists.isEmpty(productos)}">
+            <td colspan="9" class="text-center text-secondary py-4">No existen productos registrados</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+<th:block th:replace="~{plantilla/layout :: scripts}"></th:block>
 </body>
 </html>
+
