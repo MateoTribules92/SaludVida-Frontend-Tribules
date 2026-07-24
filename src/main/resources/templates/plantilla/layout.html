@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(titulo)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${titulo}">SaludVida</title>
+  <link rel="icon" type="image/png" href="/assets/images/favicon-32x32.png">
+  <link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+<nav th:fragment="topbar" id="topbar" class="navbar bg-white border-bottom fixed-top topbar px-3">
+  <button id="toggleBtn" class="d-none d-lg-inline-flex btn btn-light btn-icon btn-sm"><i class="ti ti-layout-sidebar-left-expand"></i></button>
+  <button id="mobileBtn" class="btn btn-light btn-icon btn-sm d-lg-none me-2"><i class="ti ti-layout-sidebar-left-expand"></i></button>
+  <div class="ms-auto d-flex align-items-center gap-3">
+    <span class="text-secondary small" th:text="${session.nombreUsuario != null ? session.nombreUsuario : 'Farmacia SaludVida'}"> SaludVida</span>
+    <img src="/assets/images/avatar-1.jpg" class="avatar avatar-sm rounded-circle" alt="Usuario">
+    <a href="/logout" class="btn btn-sm btn-outline-danger">Salir</a>
+    
+  </div>
+</nav>
+
+<aside th:fragment="sidebar" id="sidebar" class="sidebar">
+  <div class="logo-area">
+    <a href="/home" class="d-inline-flex align-items-center text-decoration-none">
+      <img src="/assets/images/logo-saludvida.svg" alt="SaludVida" style="max-height:32px">
+    </a>
+  </div>
+  <ul class="nav flex-column">
+    <li class="px-4 py-2"><small class="nav-text">Principal</small></li>
+    <li><a class="nav-link" href="/home"><i class="ti ti-home"></i><span class="nav-text">Dashboard</span></a></li>
+    <li class="px-4 pt-4 pb-2"><small class="nav-text">Inventario</small></li>
+    <li><a class="nav-link" href="/productos"><i class="ti ti-package"></i><span class="nav-text">Productos</span></a></li>
+    <li><a class="nav-link" href="/inventarios"><i class="ti ti-box-seam"></i><span class="nav-text">Stock por farmacia</span></a></li>
+    <li><a class="nav-link" href="/movimientos"><i class="ti ti-arrows-exchange"></i><span class="nav-text">Movimientos</span></a></li>
+    <li><a class="nav-link" href="/categorias"><i class="ti ti-category"></i><span class="nav-text">Categorías</span></a></li>
+    <li><a class="nav-link" href="/proveedores"><i class="ti ti-truck-delivery"></i><span class="nav-text">Proveedores</span></a></li>
+    <li class="px-4 pt-4 pb-2"><small class="nav-text">Ventas / Pedidos</small></li>
+    <li><a class="nav-link" href="/clientes"><i class="ti ti-users"></i><span class="nav-text">Clientes</span></a></li>
+    <li><a class="nav-link" href="/pedidos"><i class="ti ti-receipt"></i><span class="nav-text">Pedidos</span></a></li>
+    <li><a class="nav-link" href="/historial-estados"><i class="ti ti-history"></i><span class="nav-text">Historial estados</span></a></li>
+    <li class="px-4 pt-4 pb-2"><small class="nav-text">Distribución</small></li>
+    <li><a class="nav-link" href="/rutas"><i class="ti ti-route"></i><span class="nav-text">Rutas</span></a></li>
+    <li><a class="nav-link" href="/vehiculos"><i class="ti ti-ambulance"></i><span class="nav-text">Vehículos</span></a></li>
+    <li class="px-4 pt-4 pb-2"><small class="nav-text">Administración</small></li>
+    <li><a class="nav-link" href="/farmacias"><i class="ti ti-building-store"></i><span class="nav-text">Farmacias</span></a></li>
+    <li><a class="nav-link" href="/usuarios"><i class="ti ti-user-cog"></i><span class="nav-text">Usuarios</span></a></li>
+    <li><a class="nav-link" href="/roles"><i class="ti ti-shield-lock"></i><span class="nav-text">Roles</span></a></li>
+    <li><a class="nav-link" href="/reportes"><i class="ti ti-chart-bar"></i><span class="nav-text">Reportes</span></a></li>
+  </ul>
+</aside>
+
+<th:block th:fragment="scripts">
+  <script src="/assets/js/main.js" type="module"></script>
+</th:block>
+</body>
+</html>
+
+

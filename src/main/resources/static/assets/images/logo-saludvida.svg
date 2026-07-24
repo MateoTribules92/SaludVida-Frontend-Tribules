@@ -1,0 +1,9 @@
+<svg width="210" height="56" viewBox="0 0 210 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1" y="1" width="54" height="54" rx="15" fill="#E9FBEF" stroke="#BDECCB" stroke-width="2"/>
+  <path d="M28 13C19.716 13 13 19.716 13 28C13 36.284 19.716 43 28 43C36.284 43 43 36.284 43 28" stroke="#16A34A" stroke-width="4" stroke-linecap="round"/>
+  <path d="M28 18V38" stroke="#16A34A" stroke-width="4" stroke-linecap="round"/>
+  <path d="M18 28H38" stroke="#16A34A" stroke-width="4" stroke-linecap="round"/>
+  <path d="M39.5 11.5L45 17M45 11.5L39.5 17" stroke="#0EA5E9" stroke-width="3" stroke-linecap="round"/>
+  <text x="66" y="28" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="23" font-weight="800" fill="#111827">Salud<tspan fill="#16A34A">Vida</tspan></text>
+  <text x="68" y="44" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="500" fill="#64748B">Sistema Farmacia</text>
+</svg>

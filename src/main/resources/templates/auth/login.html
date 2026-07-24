@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login - SaludVida</title>
+  <link rel="icon" type="image/png" href="/assets/images/favicon-32x32.png">
+  <link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body class="bg-light">
+  <main class="min-vh-100 d-flex align-items-center justify-content-center p-3">
+    <div class="card shadow-sm border-0" style="max-width: 420px; width: 100%;">
+      <div class="card-body p-4 p-md-5">
+        <div class="text-center mb-4">
+          <img src="/assets/images/logo-saludvida.svg" alt="SaludVida" style="max-height: 42px;" class="mb-3">
+          <h1 class="h4 mb-1">Bienvenido</h1>
+          <p class="text-secondary mb-0">Ingresa al sistema SaludVida</p>
+        </div>
+
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+        <form method="post" action="/login" th:object="${login}" class="d-grid gap-3" novalidate>
+          <div>
+            <label class="form-label">Correo</label>
+            <input type="email"
+                   class="form-control"
+                   th:classappend="${#fields.hasErrors('correo')} ? 'is-invalid'"
+                   th:field="*{correo}"
+                   placeholder="correo electrónico"
+                   autofocus>
+            <div class="invalid-feedback"
+                 th:if="${#fields.hasErrors('correo')}"
+                 th:errors="*{correo}">
+              Error correo
+            </div>
+          </div>
+
+          <div>
+            <label class="form-label">Contraseña</label>
+            <input type="password"
+                   class="form-control"
+                   th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'"
+                   th:field="*{password}"
+                   placeholder="password">
+            <div class="invalid-feedback"
+                 th:if="${#fields.hasErrors('password')}"
+                 th:errors="*{password}">
+              Error contraseña
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+        </form>
+
+        <div class="mt-4 p-3 bg-primary bg-opacity-10 rounded small text-primary">
+          Usuario de prueba:<br>
+          <strong>admin@saludvida.com</strong><br>
+          Contraseña: <strong>admin123</strong>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
+

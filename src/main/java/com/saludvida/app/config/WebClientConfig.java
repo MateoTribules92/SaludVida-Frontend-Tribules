@@ -1,4 +1,4 @@
-﻿package com.saludvida.app.config;
+package com.saludvida.app.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -9,7 +9,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class WebClientConfig {
 
     @Bean
-    WebClient webClient(WebClient.Builder builder, @Value("${saludvida.api.base-url}") String baseUrl) {
-        return builder.baseUrl(baseUrl).build();
+    WebClient webClient(@Value("${saludvida.api.base-url}") String baseUrl) {
+        return WebClient.builder()
+                .baseUrl(baseUrl)
+                .build();
     }
 }
