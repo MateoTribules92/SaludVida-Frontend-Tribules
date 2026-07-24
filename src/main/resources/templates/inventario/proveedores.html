@@ -1,10 +1,129 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
-</head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{plantilla/layout :: head('Proveedores - SaludVida')}"></head>
 <body>
+<div id="overlay" class="overlay"></div>
+<nav th:replace="~{plantilla/layout :: topbar}"></nav>
+<aside th:replace="~{plantilla/layout :: sidebar}"></aside>
 
+<main id="content" class="content py-10">
+  <div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="fs-3 mb-1">Proveedores</h1>
+        <p class="text-secondary mb-0">Administra proveedores para el abastecimiento de productos.</p>
+      </div>
+      <span class="badge bg-success-subtle text-success">Inventario</span>
+    </div>
+
+    <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h2 class="h5 mb-1" th:text="${editando} ? 'Editar proveedor' : 'Nuevo proveedor'">Nuevo proveedor</h2>
+          <p class="text-secondary small mb-0">Regla: los proveedores no se eliminan; se activan o desactivan.</p>
+        </div>
+        <a th:if="${editando}" href="/proveedores" class="btn btn-sm btn-outline-secondary">Cancelar edicion</a>
+      </div>
+
+      <form method="post"
+            th:action="${editando} ? @{/proveedores/{id}(id=${editId})} : @{/proveedores}"
+            th:object="${request}"
+            class="row g-3"
+            novalidate>
+
+        <div class="col-md-4">
+          <label class="form-label">Nombre</label>
+          <input class="form-control" th:classappend="${#fields.hasErrors('nombre')} ? 'is-invalid'" th:field="*{nombre}" placeholder="Ej. FarmaDistribuidora Andina">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">RUC</label>
+          <input class="form-control" th:classappend="${#fields.hasErrors('ruc')} ? 'is-invalid'" th:field="*{ruc}" placeholder="1790012345001">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('ruc')}" th:errors="*{ruc}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Telefono</label>
+          <input class="form-control" th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid'" th:field="*{telefono}" placeholder="0991234567">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('telefono')}" th:errors="*{telefono}"></div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Correo</label>
+          <input class="form-control" th:classappend="${#fields.hasErrors('correo')} ? 'is-invalid'" th:field="*{correo}" placeholder="ventas@proveedor.com">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('correo')}" th:errors="*{correo}"></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Direccion</label>
+          <input class="form-control" th:classappend="${#fields.hasErrors('direccion')} ? 'is-invalid'" th:field="*{direccion}" placeholder="Direccion del proveedor">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('direccion')}" th:errors="*{direccion}"></div>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100" type="submit" th:text="${editando} ? 'Actualizar' : 'Guardar'">Guardar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center px-4 py-3">
+        <h3 class="h5 mb-0">Listado de proveedores</h3>
+        <span class="text-secondary small" th:text="${#lists.size(proveedores)} + ' registros'">0 registros</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>RUC</th>
+            <th>Telefono</th>
+            <th>Correo</th>
+            <th>Estado</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="item : ${proveedores}">
+            <td th:text="${item.idProveedor}">1</td>
+            <td class="fw-semibold" th:text="${item.nombre}">Proveedor</td>
+            <td th:text="${item.ruc}">RUC</td>
+            <td th:text="${item.telefono != null ? item.telefono : '-'}">Telefono</td>
+            <td th:text="${item.correo != null ? item.correo : '-'}">Correo</td>
+            <td>
+              <span th:if="${item.activo}" class="badge bg-success-subtle text-success">Activo</span>
+              <span th:if="${!item.activo}" class="badge bg-secondary-subtle text-secondary">Inactivo</span>
+            </td>
+            <td class="text-end text-nowrap">
+              <a th:href="@{/proveedores/{id}/editar(id=${item.idProveedor})}" class="btn btn-sm btn-outline-primary">Editar</a>
+
+              <form th:if="${item.activo}" th:action="@{/proveedores/{id}/desactivar(id=${item.idProveedor})}" method="post" class="d-inline">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Desactivar</button>
+              </form>
+
+              <form th:if="${!item.activo}" th:action="@{/proveedores/{id}/activar(id=${item.idProveedor})}" method="post" class="d-inline">
+                <button class="btn btn-sm btn-outline-success" type="submit">Activar</button>
+              </form>
+            </td>
+          </tr>
+
+          <tr th:if="${#lists.isEmpty(proveedores)}">
+            <td colspan="7" class="text-center text-secondary py-4">No existen proveedores registrados</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+<th:block th:replace="~{plantilla/layout :: scripts}"></th:block>
 </body>
 </html>
