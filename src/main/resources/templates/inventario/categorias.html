@@ -1,10 +1,113 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
-</head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{plantilla/layout :: head('Categorias - SaludVida')}"></head>
 <body>
+<div id="overlay" class="overlay"></div>
+<nav th:replace="~{plantilla/layout :: topbar}"></nav>
+<aside th:replace="~{plantilla/layout :: sidebar}"></aside>
 
+<main id="content" class="content py-10">
+  <div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="fs-3 mb-1">Categorias</h1>
+        <p class="text-secondary mb-0">Administra las categorias del catalogo de productos.</p>
+      </div>
+      <span class="badge bg-primary-subtle text-primary">Inventario</span>
+    </div>
+
+    <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h2 class="h5 mb-1" th:text="${editando} ? 'Editar categoria' : 'Nueva categoria'">Nueva categoria</h2>
+          <p class="text-secondary small mb-0">Regla: no se elimina fisicamente; se activa o desactiva.</p>
+        </div>
+        <a th:if="${editando}" href="/categorias" class="btn btn-sm btn-outline-secondary">Cancelar edicion</a>
+      </div>
+
+      <form method="post"
+            th:action="${editando} ? @{/categorias/{id}(id=${editId})} : @{/categorias}"
+            th:object="${request}"
+            class="row g-3"
+            novalidate>
+
+        <div class="col-md-4">
+          <label class="form-label">Nombre</label>
+          <input class="form-control"
+                 th:classappend="${#fields.hasErrors('nombre')} ? 'is-invalid'"
+                 th:field="*{nombre}"
+                 placeholder="Ej. Medicamentos">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}"></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Descripcion</label>
+          <input class="form-control"
+                 th:classappend="${#fields.hasErrors('descripcion')} ? 'is-invalid'"
+                 th:field="*{descripcion}"
+                 placeholder="Descripcion breve de la categoria">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('descripcion')}" th:errors="*{descripcion}"></div>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100" type="submit" th:text="${editando} ? 'Actualizar' : 'Guardar'">Guardar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center px-4 py-3">
+        <h3 class="h5 mb-0">Listado de categorias</h3>
+        <span class="text-secondary small" th:text="${#lists.size(categorias)} + ' registros'">0 registros</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Descripcion</th>
+            <th>Estado</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="item : ${categorias}">
+            <td th:text="${item.idCategoria}">1</td>
+            <td class="fw-semibold" th:text="${item.nombre}">Medicamentos</td>
+            <td th:text="${item.descripcion != null ? item.descripcion : '-'}">Descripcion</td>
+            <td>
+              <span th:if="${item.activo}" class="badge bg-success-subtle text-success">Activa</span>
+              <span th:if="${!item.activo}" class="badge bg-secondary-subtle text-secondary">Inactiva</span>
+            </td>
+            <td class="text-end text-nowrap">
+              <a th:href="@{/categorias/{id}/editar(id=${item.idCategoria})}" class="btn btn-sm btn-outline-primary">Editar</a>
+
+              <form th:if="${item.activo}" th:action="@{/categorias/{id}/desactivar(id=${item.idCategoria})}" method="post" class="d-inline">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Desactivar</button>
+              </form>
+
+              <form th:if="${!item.activo}" th:action="@{/categorias/{id}/activar(id=${item.idCategoria})}" method="post" class="d-inline">
+                <button class="btn btn-sm btn-outline-success" type="submit">Activar</button>
+              </form>
+            </td>
+          </tr>
+
+          <tr th:if="${#lists.isEmpty(categorias)}">
+            <td colspan="5" class="text-center text-secondary py-4">No existen categorias registradas</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+<th:block th:replace="~{plantilla/layout :: scripts}"></th:block>
 </body>
 </html>
