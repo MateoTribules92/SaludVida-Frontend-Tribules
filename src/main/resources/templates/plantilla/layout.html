@@ -12,10 +12,9 @@
   <button id="toggleBtn" class="d-none d-lg-inline-flex btn btn-light btn-icon btn-sm"><i class="ti ti-layout-sidebar-left-expand"></i></button>
   <button id="mobileBtn" class="btn btn-light btn-icon btn-sm d-lg-none me-2"><i class="ti ti-layout-sidebar-left-expand"></i></button>
   <div class="ms-auto d-flex align-items-center gap-3">
-    <span class="text-secondary small" th:text="${session.nombreUsuario != null ? session.nombreUsuario : 'Farmacia SaludVida'}"> SaludVida</span>
+    <span class="text-secondary small" th:text="${session.nombreUsuario != null ? session.nombreUsuario : 'Farmacia SaludVida'}">  | SaludVida</span>
     <img src="/assets/images/avatar-1.jpg" class="avatar avatar-sm rounded-circle" alt="Usuario">
     <a href="/logout" class="btn btn-sm btn-outline-danger">Salir</a>
-    
   </div>
 </nav>
 

@@ -1,10 +1,154 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
-</head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{plantilla/layout :: head('Movimientos de inventario - SaludVida')}"></head>
 <body>
+<div id="overlay" class="overlay"></div>
+<nav th:replace="~{plantilla/layout :: topbar}"></nav>
+<aside th:replace="~{plantilla/layout :: sidebar}"></aside>
 
+<main id="content" class="content py-10">
+  <div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="fs-3 mb-1">Movimientos de inventario</h1>
+        <p class="text-secondary mb-0">Registra entradas, salidas y ajustes con trazabilidad del stock.</p>
+      </div>
+      <span class="badge bg-info-subtle text-info">Trazabilidad</span>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card p-3 bg-success bg-opacity-10 border-success border-opacity-25">
+          <span class="text-secondary small">Entradas registradas</span>
+          <strong class="fs-4 text-success" th:text="${entradas}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 bg-danger bg-opacity-10 border-danger border-opacity-25">
+          <span class="text-secondary small">Salidas registradas</span>
+          <strong class="fs-4 text-danger" th:text="${salidas}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 bg-warning bg-opacity-10 border-warning border-opacity-25">
+          <span class="text-secondary small">Ajustes registrados</span>
+          <strong class="fs-4 text-warning" th:text="${ajustes}">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="card p-4 mb-4">
+      <div class="mb-3">
+        <h2 class="h5 mb-1">Nuevo movimiento</h2>
+        <p class="text-secondary small mb-0">
+          Reglas: entrada suma stock, salida resta stock y no puede dejarlo negativo, ajuste fija el nuevo stock.
+        </p>
+      </div>
+
+      <form method="post" th:action="@{/movimientos}" th:object="${request}" class="row g-3" novalidate>
+
+        <div class="col-md-5">
+          <label class="form-label">Inventario</label>
+          <select class="form-select"
+                  th:classappend="${#fields.hasErrors('idInventario')} ? 'is-invalid'"
+                  th:field="*{idInventario}">
+            <option value="0">Seleccione...</option>
+            <option th:each="inv : ${inventarios}"
+                    th:value="${inv.idInventario}"
+                    th:text="${nombresInventarios[inv.idInventario]} + ' | Stock actual: ' + ${inv.stock}">
+              Inventario
+            </option>
+          </select>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('idInventario')}" th:errors="*{idInventario}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Tipo de movimiento</label>
+          <select class="form-select"
+                  th:classappend="${#fields.hasErrors('tipoMovimiento')} ? 'is-invalid'"
+                  th:field="*{tipoMovimiento}">
+            <option value="">Seleccione...</option>
+            <option th:each="tipo : ${tiposMovimiento}" th:value="${tipo}" th:text="${tipo}">ENTRADA</option>
+          </select>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('tipoMovimiento')}" th:errors="*{tipoMovimiento}"></div>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Cantidad</label>
+          <input type="number"
+                 min="1"
+                 class="form-control"
+                 th:classappend="${#fields.hasErrors('cantidad')} ? 'is-invalid'"
+                 th:field="*{cantidad}"
+                 placeholder="10">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('cantidad')}" th:errors="*{cantidad}"></div>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Usuario</label>
+          <input type="text" class="form-control" value="Sistema" disabled>
+          <small class="text-secondary">Luego se tomará del login.</small>
+        </div>
+
+        <div class="col-md-10">
+          <label class="form-label">Motivo</label>
+          <input type="text" class="form-control" th:field="*{motivo}" placeholder="Ej: compra a proveedor, venta, ajuste por conteo físico">
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100" type="submit">Registrar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center px-4 py-3">
+        <h3 class="h5 mb-0">Historial de movimientos</h3>
+        <span class="text-secondary small" th:text="${#lists.size(movimientos)} + ' registros'">0 registros</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Inventario</th>
+            <th>Tipo</th>
+            <th>Cantidad</th>
+            <th>Usuario</th>
+            <th>Motivo</th>
+            <th>Fecha</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="item : ${movimientos}">
+            <td th:text="${item.idMovimiento}">1</td>
+            <td th:text="${nombresInventarios[item.idInventario] != null ? nombresInventarios[item.idInventario] : 'Inventario no encontrado'}">Inventario</td>
+            <td>
+              <span th:if="${item.tipoMovimiento != null and item.tipoMovimiento.name() == 'ENTRADA'}" class="badge bg-success-subtle text-success">ENTRADA</span>
+              <span th:if="${item.tipoMovimiento != null and item.tipoMovimiento.name() == 'SALIDA'}" class="badge bg-danger-subtle text-danger">SALIDA</span>
+              <span th:if="${item.tipoMovimiento != null and item.tipoMovimiento.name() == 'AJUSTE'}" class="badge bg-warning-subtle text-warning">AJUSTE</span>
+            </td>
+            <td class="fw-semibold" th:text="${item.cantidad}">0</td>
+            <td th:text="${item.idUsuario != null ? item.idUsuario : '-'}">-</td>
+            <td th:text="${item.motivo != null and !#strings.isEmpty(item.motivo) ? item.motivo : '-'}">-</td>
+            <td th:text="${item.fechaMovimiento != null ? item.fechaMovimiento : '-'}">-</td>
+          </tr>
+
+          <tr th:if="${#lists.isEmpty(movimientos)}">
+            <td colspan="7" class="text-center text-secondary py-4">No existen movimientos registrados</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+<th:block th:replace="~{plantilla/layout :: scripts}"></th:block>
 </body>
 </html>
