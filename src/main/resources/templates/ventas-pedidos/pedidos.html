@@ -1,10 +1,281 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
-</head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{plantilla/layout :: head('Pedidos - SaludVida')}"></head>
 <body>
+<div id="overlay" class="overlay"></div>
+<nav th:replace="~{plantilla/layout :: topbar}"></nav>
+<aside th:replace="~{plantilla/layout :: sidebar}"></aside>
 
+<main id="content" class="content py-10">
+  <div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="fs-3 mb-1">Pedidos</h1>
+        <p class="text-secondary mb-0">Registra la cabecera del pedido y controla su estado operativo.</p>
+      </div>
+      <span class="badge bg-primary-subtle text-primary">Ventas</span>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card p-3 bg-warning bg-opacity-10 border-warning border-opacity-25">
+          <span class="text-secondary small">Pedidos pendientes</span>
+          <strong class="fs-4 text-warning" th:text="${pedidosPendientes}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 bg-info bg-opacity-10 border-info border-opacity-25">
+          <span class="text-secondary small">Pedidos en proceso</span>
+          <strong class="fs-4 text-info" th:text="${pedidosEnProceso}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 bg-success bg-opacity-10 border-success border-opacity-25">
+          <span class="text-secondary small">Pedidos cerrados</span>
+          <strong class="fs-4 text-success" th:text="${pedidosCerrados}">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h2 class="h5 mb-1" th:text="${editando} ? 'Editar pedido' : 'Nuevo pedido'">Nuevo pedido</h2>
+          <p class="text-secondary small mb-0">
+            El pedido se crea como PENDIENTE. Antes de confirmarlo, agrega productos en el detalle del pedido.
+          </p>
+        </div>
+        <a th:if="${editando}" href="/pedidos" class="btn btn-sm btn-outline-secondary">Cancelar edición</a>
+      </div>
+
+      <form method="post"
+            th:action="${editando} ? @{/pedidos/{id}(id=${editId})} : @{/pedidos}"
+            th:object="${request}"
+            class="row g-3"
+            novalidate>
+
+        <div class="col-md-3">
+          <label class="form-label">Número de pedido</label>
+          <input class="form-control"
+                 th:classappend="${#fields.hasErrors('numeroPedido')} ? 'is-invalid'"
+                 th:field="*{numeroPedido}"
+                 readonly
+                 title="El número se genera automáticamente al guardar"
+                 placeholder="Generado automáticamente">
+          <div class="form-text" th:if="${!editando}">Se asignará automáticamente al guardar.</div>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('numeroPedido')}" th:errors="*{numeroPedido}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Cliente</label>
+          <select class="form-select"
+                  th:classappend="${#fields.hasErrors('idCliente')} ? 'is-invalid'"
+                  th:field="*{idCliente}">
+            <option value="0">Seleccione...</option>
+            <option th:each="cliente : ${clientes}" th:value="${cliente.idCliente}" th:text="${cliente.nombres} + ' - ' + ${cliente.identificacion}">Cliente</option>
+          </select>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('idCliente')}" th:errors="*{idCliente}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Farmacia</label>
+          <select class="form-select"
+                  th:classappend="${#fields.hasErrors('idFarmacia')} ? 'is-invalid'"
+                  th:field="*{idFarmacia}">
+            <option value="0">Seleccione...</option>
+            <option th:each="farmacia : ${farmacias}" th:value="${farmacia.idFarmacia}" th:text="${farmacia.nombre} + ' - ' + ${farmacia.zona}">Farmacia</option>
+          </select>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('idFarmacia')}" th:errors="*{idFarmacia}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Vendedor</label>
+          <select class="form-select"
+                  th:classappend="${#fields.hasErrors('idVendedor')} ? 'is-invalid'"
+                  th:field="*{idVendedor}">
+            <option value="0">Seleccione...</option>
+            <option th:each="vendedor : ${vendedores}" th:value="${vendedor.idUsuario}" th:text="${vendedor.nombres}">Vendedor</option>
+          </select>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('idVendedor')}" th:errors="*{idVendedor}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Estado</label>
+          <input th:if="${!editando}" class="form-control" value="PENDIENTE" readonly>
+          <input th:if="${!editando}" type="hidden" th:field="*{estado}" value="PENDIENTE">
+          <select th:if="${editando}"
+                  class="form-select"
+                  th:classappend="${#fields.hasErrors('estado')} ? 'is-invalid'"
+                  th:field="*{estado}">
+            <option th:value="PENDIENTE">PENDIENTE</option>
+          </select>
+          <div class="form-text" th:if="${!editando}">Los cambios de estado se realizan desde el listado.</div>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('estado')}" th:errors="*{estado}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Total</label>
+          <input class="form-control"
+                 th:value="${editando and request.total != null ? request.total : '0.00'}"
+                 readonly>
+          <div class="form-text">Se calcula automáticamente desde productos por pedido.</div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Dirección de entrega</label>
+          <input class="form-control"
+                 th:classappend="${#fields.hasErrors('direccionEntrega')} ? 'is-invalid'"
+                 th:field="*{direccionEntrega}"
+                 placeholder="Dirección completa de entrega">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('direccionEntrega')}" th:errors="*{direccionEntrega}"></div>
+        </div>
+
+        <div class="col-md-10">
+          <label class="form-label">Observación</label>
+          <input class="form-control"
+                 th:classappend="${#fields.hasErrors('observacion')} ? 'is-invalid'"
+                 th:field="*{observacion}"
+                 placeholder="Indicaciones de entrega o notas internas">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('observacion')}" th:errors="*{observacion}"></div>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100" type="submit" th:text="${editando} ? 'Actualizar' : 'Guardar'">Guardar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center px-4 py-3">
+        <h3 class="h5 mb-0">Listado de pedidos</h3>
+        <span class="text-secondary small" th:text="${#lists.size(pedidos)} + ' registros'">0 registros</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Número</th>
+            <th>Cliente</th>
+            <th>Farmacia</th>
+            <th>Vendedor</th>
+            <th>Estado</th>
+            <th>Total</th>
+            <th>Entrega</th>
+            <th>Siguiente paso</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="p : ${pedidos}">
+            <td th:text="${p.idPedido}">1</td>
+            <td class="fw-semibold" th:text="${p.numeroPedido}">PED-0001</td>
+            <td th:text="${nombresClientes[p.idCliente] != null ? nombresClientes[p.idCliente] : 'Cliente no encontrado'}">Cliente</td>
+            <td th:text="${nombresFarmacias[p.idFarmacia] != null ? nombresFarmacias[p.idFarmacia] : 'Farmacia no encontrada'}">Farmacia</td>
+            <td th:text="${nombresVendedores[p.idVendedor] != null ? nombresVendedores[p.idVendedor] : 'Vendedor no encontrado'}">Vendedor</td>
+            <td>
+              <span th:if="${p.estado != null and p.estado.name() == 'PENDIENTE'}" class="badge bg-warning-subtle text-warning">PENDIENTE</span>
+              <span th:if="${p.estado != null and p.estado.name() == 'CONFIRMADO'}" class="badge bg-primary-subtle text-primary">CONFIRMADO</span>
+              <span th:if="${p.estado != null and p.estado.name() == 'EN_PREPARACION'}" class="badge bg-info-subtle text-info">EN_PREPARACION</span>
+              <span th:if="${p.estado != null and p.estado.name() == 'EN_RUTA'}" class="badge bg-info-subtle text-info">EN_RUTA</span>
+              <span th:if="${p.estado != null and p.estado.name() == 'ENTREGADO'}" class="badge bg-success-subtle text-success">ENTREGADO</span>
+              <span th:if="${p.estado != null and p.estado.name() == 'CANCELADO'}" class="badge bg-danger-subtle text-danger">CANCELADO</span>
+            </td>
+            <td th:text="${p.total}">0.00</td>
+            <td>
+              <div th:text="${p.direccionEntrega}">Dirección</div>
+              <small class="text-secondary" th:text="${p.fechaPedido != null ? p.fechaPedido : '-'}">Fecha</small>
+            </td>
+            <td>
+              <span th:if="${p.estado != null and p.estado.name() == 'PENDIENTE' and p.total != null and p.total > 0}"
+                    class="badge bg-primary-subtle text-primary">Confirmar pedido</span>
+              <span th:if="${p.estado != null and p.estado.name() == 'PENDIENTE' and (p.total == null or p.total <= 0)}"
+                    class="badge bg-warning-subtle text-warning">Agregar productos</span>
+              <span th:if="${p.estado != null and p.estado.name() == 'CONFIRMADO'}"
+                    class="badge bg-info-subtle text-info">Enviar a preparación</span>
+              <span th:if="${p.estado != null and p.estado.name() == 'EN_PREPARACION'}"
+                    class="badge bg-info-subtle text-info">Asignar ruta</span>
+              <span th:if="${p.estado != null and p.estado.name() == 'EN_RUTA'}"
+                    class="badge bg-success-subtle text-success">Registrar entrega</span>
+              <span th:if="${p.estado != null and p.estado.name() == 'ENTREGADO'}"
+                    class="badge bg-success-subtle text-success">Completado</span>
+              <span th:if="${p.estado != null and p.estado.name() == 'CANCELADO'}"
+                    class="badge bg-danger-subtle text-danger">Cancelado</span>
+            </td>
+            <td class="text-end text-nowrap">
+              <a th:if="${p.estado != null and p.estado.name() == 'PENDIENTE'}"
+                 th:href="@{/pedidos/{id}/editar(id=${p.idPedido})}"
+                 class="btn btn-sm btn-outline-primary">Editar</a>
+
+              <a th:href="@{/detalles-pedido(pedido=${p.idPedido})}"
+                 class="btn btn-sm"
+                 th:classappend="${p.estado != null and p.estado.name() == 'PENDIENTE'} ? 'btn-outline-info' : 'btn-outline-secondary'"
+                 th:text="${p.estado != null and p.estado.name() == 'PENDIENTE' and (p.total == null or p.total <= 0)} ? 'Agregar productos' : 'Ver detalle'">
+                Detalle
+              </a>
+
+              <form th:if="${p.estado != null and p.estado.name() != 'ENTREGADO' and p.estado.name() != 'CANCELADO'}"
+                    th:action="@{/pedidos/{id}/estado(id=${p.idPedido})}"
+                    method="post"
+                    class="d-inline-flex gap-1 align-items-center form-cambio-estado"
+                    th:attr="data-numero-pedido=${p.numeroPedido}">
+                <select name="estado" class="form-select form-select-sm">
+                  <option th:if="${p.estado.name() == 'PENDIENTE' and p.total != null and p.total > 0}" value="CONFIRMADO">CONFIRMADO</option>
+                  <option th:if="${p.estado.name() == 'PENDIENTE'}" value="CANCELADO">CANCELADO</option>
+
+                  <option th:if="${p.estado.name() == 'CONFIRMADO'}" value="EN_PREPARACION">EN_PREPARACION</option>
+                  <option th:if="${p.estado.name() == 'CONFIRMADO'}" value="CANCELADO">CANCELADO</option>
+
+                  <option th:if="${p.estado.name() == 'EN_PREPARACION'}" value="CANCELADO">CANCELADO</option>
+
+                  <option th:if="${p.estado.name() == 'EN_RUTA'}" value="ENTREGADO">ENTREGADO</option>
+                  <option th:if="${p.estado.name() == 'EN_RUTA'}" value="CANCELADO">CANCELADO</option>
+                </select>
+                <button class="btn btn-sm btn-outline-secondary" type="submit">Cambiar</button>
+              </form>
+
+              <a th:if="${p.estado != null and p.estado.name() == 'EN_PREPARACION'}"
+                 th:href="@{/ruta-pedidos(pedido=${p.idPedido})}"
+                 class="btn btn-sm btn-outline-success">Asignar ruta</a>
+
+              <span th:if="${p.estado != null and (p.estado.name() == 'ENTREGADO' or p.estado.name() == 'CANCELADO')}"
+                    class="text-secondary small">Estado final</span>
+            </td>
+          </tr>
+
+          <tr th:if="${#lists.isEmpty(pedidos)}">
+            <td colspan="10" class="text-center text-secondary py-4">No existen pedidos registrados</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+<th:block th:replace="~{plantilla/layout :: scripts}"></th:block>
+<script>
+  document.querySelectorAll('.form-cambio-estado').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      const estado = form.querySelector('select[name="estado"]').value;
+      const numeroPedido = form.dataset.numeroPedido || 'este pedido';
+
+      let mensaje = '¿Seguro que deseas cambiar ' + numeroPedido + ' al estado ' + estado + '?';
+
+      if (estado === 'CANCELADO') {
+        mensaje = 'Atención: vas a CANCELAR ' + numeroPedido + '. Esta acción deja el pedido como estado final. ¿Deseas continuar?';
+      }
+
+      if (!confirm(mensaje)) {
+        event.preventDefault();
+      }
+    });
+  });
+</script>
 </body>
 </html>
