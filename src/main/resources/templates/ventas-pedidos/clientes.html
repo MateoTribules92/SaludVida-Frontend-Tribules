@@ -1,10 +1,251 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
-</head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{plantilla/layout :: head('Clientes - SaludVida')}"></head>
 <body>
+<div id="overlay" class="overlay"></div>
+<nav th:replace="~{plantilla/layout :: topbar}"></nav>
+<aside th:replace="~{plantilla/layout :: sidebar}"></aside>
 
+<main id="content" class="content py-10">
+  <div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="fs-3 mb-1">Clientes</h1>
+        <p class="text-secondary mb-0">Administra clientes particulares e institucionales para la gestión de pedidos.</p>
+      </div>
+      <span class="badge bg-primary-subtle text-primary">Ventas</span>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card p-3 bg-primary bg-opacity-10 border-primary border-opacity-25">
+          <span class="text-secondary small">Clientes registrados</span>
+          <strong class="fs-4 text-primary" th:text="${#lists.size(clientes)}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 bg-success bg-opacity-10 border-success border-opacity-25">
+          <span class="text-secondary small">Clientes activos</span>
+          <strong class="fs-4 text-success" th:text="${clientesActivos}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 bg-warning bg-opacity-10 border-warning border-opacity-25">
+          <span class="text-secondary small">Clientes frecuentes</span>
+          <strong class="fs-4 text-warning" th:text="${clientesFrecuentes}">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h2 class="h5 mb-1" th:text="${editando} ? 'Editar cliente' : 'Nuevo cliente'">Nuevo cliente</h2>
+          <p class="text-secondary small mb-0">Reglas: identificación única, datos de contacto válidos y eliminación lógica.</p>
+        </div>
+        <a th:if="${editando}" href="/clientes" class="btn btn-sm btn-outline-secondary">Cancelar edición</a>
+      </div>
+
+      <form method="post"
+            th:action="${editando} ? @{/clientes/{id}(id=${editId})} : @{/clientes}"
+            th:object="${request}"
+            class="row g-3"
+            novalidate>
+
+        <div class="col-md-3">
+          <label class="form-label">Tipo de cliente</label>
+          <select class="form-select"
+                  th:classappend="${#fields.hasErrors('tipoCliente')} ? 'is-invalid'"
+                  th:field="*{tipoCliente}">
+            <option value="">Seleccione...</option>
+            <option th:each="tipo : ${tiposCliente}" th:value="${tipo}" th:text="${tipo}">PARTICULAR</option>
+          </select>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('tipoCliente')}" th:errors="*{tipoCliente}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Identificación</label>
+          <input class="form-control"
+                 th:classappend="${#fields.hasErrors('identificacion')} ? 'is-invalid'"
+                 th:field="*{identificacion}"
+                 placeholder="Ej: 1723456789">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('identificacion')}" th:errors="*{identificacion}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Nombres</label>
+          <input class="form-control"
+                 th:classappend="${#fields.hasErrors('nombres')} ? 'is-invalid'"
+                 th:field="*{nombres}"
+                 placeholder="Nombre del cliente">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('nombres')}" th:errors="*{nombres}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Clasificación</label>
+          <select class="form-select"
+                  th:classappend="${#fields.hasErrors('clasificacion')} ? 'is-invalid'"
+                  th:field="*{clasificacion}">
+            <option value="">Seleccione...</option>
+            <option th:each="clasificacion : ${clasificacionesCliente}" th:value="${clasificacion}" th:text="${clasificacion}">OCASIONAL</option>
+          </select>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('clasificacion')}" th:errors="*{clasificacion}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Correo</label>
+          <input type="email"
+                 class="form-control"
+                 th:classappend="${#fields.hasErrors('correo')} ? 'is-invalid'"
+                 th:field="*{correo}"
+                 placeholder="cliente@correo.com">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('correo')}" th:errors="*{correo}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Teléfono</label>
+          <input class="form-control"
+                 th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid'"
+                 th:field="*{telefono}"
+                 placeholder="0999999999">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('telefono')}" th:errors="*{telefono}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Ciudad</label>
+          <input class="form-control"
+                 th:classappend="${#fields.hasErrors('ciudad')} ? 'is-invalid'"
+                 th:field="*{ciudad}"
+                 placeholder="Quito">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('ciudad')}" th:errors="*{ciudad}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Zona</label>
+          <input class="form-control"
+                 th:classappend="${#fields.hasErrors('zona')} ? 'is-invalid'"
+                 th:field="*{zona}"
+                 placeholder="Norte">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('zona')}" th:errors="*{zona}"></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Dirección</label>
+          <input class="form-control"
+                 th:classappend="${#fields.hasErrors('direccion')} ? 'is-invalid'"
+                 th:field="*{direccion}"
+                 placeholder="Dirección de entrega o referencia">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('direccion')}" th:errors="*{direccion}"></div>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Latitud</label>
+          <input type="number"
+                 step="0.0000001"
+                 class="form-control"
+                 th:classappend="${#fields.hasErrors('latitud')} ? 'is-invalid'"
+                 th:field="*{latitud}"
+                 placeholder="-0.180653">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('latitud')}" th:errors="*{latitud}"></div>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Longitud</label>
+          <input type="number"
+                 step="0.0000001"
+                 class="form-control"
+                 th:classappend="${#fields.hasErrors('longitud')} ? 'is-invalid'"
+                 th:field="*{longitud}"
+                 placeholder="-78.467834">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('longitud')}" th:errors="*{longitud}"></div>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100" type="submit" th:text="${editando} ? 'Actualizar' : 'Guardar'">Guardar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center px-4 py-3">
+        <h3 class="h5 mb-0">Listado de clientes</h3>
+        <span class="text-secondary small" th:text="${#lists.size(clientes)} + ' registros'">0 registros</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Identificación</th>
+            <th>Cliente</th>
+            <th>Tipo</th>
+            <th>Clasificación</th>
+            <th>Contacto</th>
+            <th>Ubicación</th>
+            <th>Estado</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="item : ${clientes}">
+            <td th:text="${item.idCliente}">1</td>
+            <td class="fw-semibold" th:text="${item.identificacion}">1723456789</td>
+            <td>
+              <div class="fw-semibold" th:text="${item.nombres}">Cliente</div>
+              <small class="text-secondary" th:text="${item.direccion != null and !#strings.isEmpty(item.direccion) ? item.direccion : 'Sin dirección'}">Dirección</small>
+            </td>
+            <td th:text="${item.tipoCliente}">PARTICULAR</td>
+            <td>
+              <span class="badge bg-warning-subtle text-warning" th:if="${item.clasificacion != null and item.clasificacion.name() == 'OCASIONAL'}">OCASIONAL</span>
+              <span class="badge bg-success-subtle text-success" th:if="${item.clasificacion != null and item.clasificacion.name() == 'FRECUENTE'}">FRECUENTE</span>
+              <span class="badge bg-primary-subtle text-primary" th:if="${item.clasificacion != null and item.clasificacion.name() == 'MAYORISTA'}">MAYORISTA</span>
+            </td>
+            <td>
+              <div th:text="${item.correo != null and !#strings.isEmpty(item.correo) ? item.correo : '-'}">correo</div>
+              <small class="text-secondary" th:text="${item.telefono != null and !#strings.isEmpty(item.telefono) ? item.telefono : '-'}">telefono</small>
+            </td>
+            <td>
+              <div th:text="${item.ciudad}">Ciudad</div>
+              <small class="text-secondary" th:text="${item.zona}">Zona</small>
+            </td>
+            <td>
+              <span th:if="${item.activo != null and item.activo}" class="badge bg-success-subtle text-success">Activo</span>
+              <span th:if="${item.activo != null and !item.activo}" class="badge bg-danger-subtle text-danger">Inactivo</span>
+            </td>
+            <td class="text-end text-nowrap">
+              <a th:href="@{/clientes/{id}/editar(id=${item.idCliente})}" class="btn btn-sm btn-outline-primary">Editar</a>
+
+              <form th:if="${item.activo != null and item.activo}"
+                    th:action="@{/clientes/{id}/desactivar(id=${item.idCliente})}"
+                    method="post"
+                    class="d-inline">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Desactivar</button>
+              </form>
+
+              <form th:if="${item.activo != null and !item.activo}"
+                    th:action="@{/clientes/{id}/activar(id=${item.idCliente})}"
+                    method="post"
+                    class="d-inline">
+                <button class="btn btn-sm btn-outline-success" type="submit">Activar</button>
+              </form>
+            </td>
+          </tr>
+
+          <tr th:if="${#lists.isEmpty(clientes)}">
+            <td colspan="9" class="text-center text-secondary py-4">No existen clientes registrados</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+<th:block th:replace="~{plantilla/layout :: scripts}"></th:block>
 </body>
 </html>
