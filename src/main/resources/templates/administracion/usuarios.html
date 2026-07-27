@@ -1,10 +1,167 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
-</head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{plantilla/layout :: head('Usuarios - SaludVida')}"></head>
 <body>
+<div id="overlay" class="overlay"></div>
+<nav th:replace="~{plantilla/layout :: topbar}"></nav>
+<aside th:replace="~{plantilla/layout :: sidebar}"></aside>
 
+<main id="content" class="content py-10">
+  <div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="fs-3 mb-1">Usuarios</h1>
+        <p class="text-secondary mb-0">Administra los usuarios internos que operan ventas, inventario y distribución.</p>
+      </div>
+      <span class="badge bg-primary-subtle text-primary">Administración</span>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card p-3 bg-primary bg-opacity-10 border-primary border-opacity-25">
+          <span class="text-secondary small">Usuarios registrados</span>
+          <strong class="fs-4 text-primary" th:text="${#lists.size(usuarios)}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 bg-success bg-opacity-10 border-success border-opacity-25">
+          <span class="text-secondary small">Usuarios activos</span>
+          <strong class="fs-4 text-success" th:text="${usuariosActivos}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 bg-warning bg-opacity-10 border-warning border-opacity-25">
+          <span class="text-secondary small">Roles disponibles</span>
+          <strong class="fs-4 text-warning" th:text="${#lists.size(roles)}">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h2 class="h5 mb-1" th:text="${editando} ? 'Editar usuario' : 'Nuevo usuario'">Nuevo usuario</h2>
+          <p class="text-secondary small mb-0">Reglas: correo único, rol activo y desactivación lógica para auditoría.</p>
+        </div>
+        <a th:if="${editando}" href="/usuarios" class="btn btn-sm btn-outline-secondary">Cancelar edición</a>
+      </div>
+
+      <form method="post"
+            th:action="${editando} ? @{/usuarios/{id}(id=${editId})} : @{/usuarios}"
+            th:object="${request}"
+            class="row g-3"
+            novalidate>
+
+        <div class="col-md-3">
+          <label class="form-label">Rol</label>
+          <select class="form-select"
+                  th:classappend="${#fields.hasErrors('idRol')} ? 'is-invalid'"
+                  th:field="*{idRol}">
+            <option value="0">Seleccione...</option>
+            <option th:each="rol : ${roles}" th:value="${rol.idRol}" th:text="${rol.nombre} + ' (' + ${rol.codigo} + ')'">Rol</option>
+          </select>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('idRol')}" th:errors="*{idRol}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Nombres</label>
+          <input class="form-control"
+                 th:classappend="${#fields.hasErrors('nombres')} ? 'is-invalid'"
+                 th:field="*{nombres}"
+                 placeholder="Nombre del usuario">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('nombres')}" th:errors="*{nombres}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Correo</label>
+          <input type="email"
+                 class="form-control"
+                 th:classappend="${#fields.hasErrors('correo')} ? 'is-invalid'"
+                 th:field="*{correo}"
+                 placeholder="usuario@saludvida.com">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('correo')}" th:errors="*{correo}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Contraseña</label>
+          <input type="password"
+                 class="form-control"
+                 th:classappend="${#fields.hasErrors('passwordHash')} ? 'is-invalid'"
+                 th:field="*{passwordHash}"
+                 placeholder="Mínimo 6 caracteres">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('passwordHash')}" th:errors="*{passwordHash}"></div>
+          <small class="text-secondary" th:if="${editando}">Ingrese nuevamente la contraseña al editar.</small>
+        </div>
+
+        <div class="col-12">
+          <button class="btn btn-primary" type="submit" th:text="${editando} ? 'Actualizar' : 'Guardar'">Guardar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center px-4 py-3">
+        <h3 class="h5 mb-0">Listado de usuarios</h3>
+        <span class="text-secondary small" th:text="${#lists.size(usuarios)} + ' registros'">0 registros</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Usuario</th>
+            <th>Correo</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Creación</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="item : ${usuarios}">
+            <td th:text="${item.idUsuario}">1</td>
+            <td class="fw-semibold" th:text="${item.nombres}">Usuario</td>
+            <td th:text="${item.correo}">correo</td>
+            <td th:text="${nombresRoles[item.idRol] != null ? nombresRoles[item.idRol] : 'Rol no encontrado'}">Rol</td>
+            <td>
+              <span th:if="${item.activo != null and item.activo}" class="badge bg-success-subtle text-success">Activo</span>
+              <span th:if="${item.activo != null and !item.activo}" class="badge bg-danger-subtle text-danger">Inactivo</span>
+            </td>
+            <td th:text="${item.fechaCreacion != null ? item.fechaCreacion : '-'}">-</td>
+            <td class="text-end text-nowrap">
+              <a th:href="@{/usuarios/{id}/editar(id=${item.idUsuario})}" class="btn btn-sm btn-outline-primary">Editar</a>
+
+              <form th:if="${item.activo != null and item.activo}"
+                    th:action="@{/usuarios/{id}/desactivar(id=${item.idUsuario})}"
+                    method="post"
+                    class="d-inline">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Desactivar</button>
+              </form>
+
+              <form th:if="${item.activo != null and !item.activo}"
+                    th:action="@{/usuarios/{id}/activar(id=${item.idUsuario})}"
+                    method="post"
+                    class="d-inline">
+                <button class="btn btn-sm btn-outline-success" type="submit">Activar</button>
+              </form>
+            </td>
+          </tr>
+
+          <tr th:if="${#lists.isEmpty(usuarios)}">
+            <td colspan="7" class="text-center text-secondary py-4">No existen usuarios registrados</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+<th:block th:replace="~{plantilla/layout :: scripts}"></th:block>
 </body>
 </html>
