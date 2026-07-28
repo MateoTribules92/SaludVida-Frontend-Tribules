@@ -17,6 +17,8 @@ import com.saludvida.app.model.enums.EstadoRuta;
 
 import com.saludvida.app.services.*;
 
+import jakarta.servlet.http.HttpSession;
+
 @Controller
 public class HomeController {
     private final IProductoService productoService;
@@ -41,7 +43,7 @@ public class HomeController {
     }
 
     @GetMapping({"/", "/home", "/index"})
-    public String index(Model model) {
+    public String index(Model model, HttpSession session) {
         var productos = productoService.listar();
         var inventarios = inventarioService.listar();
         var pedidos = pedidoService.listar();
@@ -49,6 +51,23 @@ public class HomeController {
         var clientes = clienteService.listar();
         var farmacias = farmaciaService.listar();
         var rutas = rutaService.listar();
+
+        Long idFarmaciaSesion = obtenerIdFarmaciaSesion(session);
+        boolean esAdmin = esAdmin(session);
+
+        if (!esAdmin && idFarmaciaSesion != null) {
+            inventarios = inventarios.stream()
+                    .filter(i -> i.getIdFarmacia() == idFarmaciaSesion)
+                    .toList();
+
+            pedidos = pedidos.stream()
+                    .filter(p -> p.getIdFarmacia() == idFarmaciaSesion)
+                    .toList();
+
+            farmacias = farmacias.stream()
+                    .filter(f -> f.getIdFarmacia() == idFarmaciaSesion)
+                    .toList();
+        }
 
         LocalDate hoy = LocalDate.now();
         LocalDate limiteCaducidad = hoy.plusDays(30);
@@ -134,6 +153,29 @@ public class HomeController {
         model.addAttribute("nombresProductos", nombresProductos);
         model.addAttribute("nombresFarmacias", nombresFarmacias);
         return "index/home";
+    }
+
+    private boolean esAdmin(HttpSession session) {
+        Object rol = session.getAttribute("rolUsuario");
+        return "ADMINISTRADOR".equals(rol) || "ADMIN".equals(rol);
+    }
+
+    private Long obtenerIdFarmaciaSesion(HttpSession session) {
+        Object valor = session.getAttribute("idFarmacia");
+
+        if (valor instanceof Number number) {
+            return number.longValue();
+        }
+
+        if (valor instanceof String texto && !texto.trim().isEmpty()) {
+            try {
+                return Long.parseLong(texto.trim());
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+
+        return null;
     }
 }
 

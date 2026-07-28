@@ -27,6 +27,7 @@ import com.saludvida.app.services.IPedidoService;
 import com.saludvida.app.services.IRolService;
 import com.saludvida.app.services.IUsuarioService;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
 @Controller
@@ -53,8 +54,8 @@ public class PedidoController {
     }
 
     @GetMapping
-    public String listar(Model model) {
-        cargarModeloBase(model);
+    public String listar(Model model, HttpSession session) {
+        cargarModeloBase(model, session);
 
         if (!model.containsAttribute("request")) {
             PedidoRequestDTO request = new PedidoRequestDTO();
@@ -74,15 +75,17 @@ public class PedidoController {
             @Valid @ModelAttribute("request") PedidoRequestDTO request,
             BindingResult result,
             Model model,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            HttpSession session) {
 
         if (result.hasErrors()) {
-            cargarModeloBase(model);
+            cargarModeloBase(model, session);
             model.addAttribute("editando", false);
             return "ventas-pedidos/pedidos";
         }
 
         try {
+            aplicarFarmaciaSesion(request, session);
             request.setNumeroPedido(null);
             request.setEstado(EstadoPedido.PENDIENTE);
             request.setTotal(BigDecimal.ZERO);
@@ -91,7 +94,7 @@ public class PedidoController {
             redirectAttributes.addFlashAttribute("mensaje", "Pedido creado correctamente");
             return "redirect:/pedidos";
         } catch (Exception e) {
-            cargarModeloBase(model);
+            cargarModeloBase(model, session);
             model.addAttribute("editando", false);
             model.addAttribute("error", "No se pudo crear el pedido. " + obtenerDetalleError(e));
             return "ventas-pedidos/pedidos";
@@ -99,7 +102,11 @@ public class PedidoController {
     }
 
     @GetMapping("/{id}/editar")
-    public String mostrarEditar(@PathVariable long id, Model model, RedirectAttributes redirectAttributes) {
+    public String mostrarEditar(
+            @PathVariable long id,
+            Model model,
+            RedirectAttributes redirectAttributes,
+            HttpSession session) {
         var pedido = service.buscarPorId(id);
 
         if (pedido.isEmpty()) {
@@ -108,6 +115,12 @@ public class PedidoController {
         }
 
         PedidoResponseDTO response = pedido.get();
+
+        if (!puedeGestionarFarmacia(response.getIdFarmacia(), session)) {
+            redirectAttributes.addFlashAttribute("error", "No tienes permiso para editar pedidos de otra farmacia.");
+            return "redirect:/pedidos";
+        }
+
         PedidoRequestDTO request = new PedidoRequestDTO();
         request.setNumeroPedido(response.getNumeroPedido());
         request.setIdCliente(response.getIdCliente());
@@ -118,7 +131,7 @@ public class PedidoController {
         request.setDireccionEntrega(response.getDireccionEntrega());
         request.setObservacion(response.getObservacion());
 
-        cargarModeloBase(model);
+        cargarModeloBase(model, session);
         model.addAttribute("request", request);
         model.addAttribute("editando", true);
         model.addAttribute("editId", id);
@@ -132,16 +145,18 @@ public class PedidoController {
             @Valid @ModelAttribute("request") PedidoRequestDTO request,
             BindingResult result,
             Model model,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            HttpSession session) {
 
         if (result.hasErrors()) {
-            cargarModeloBase(model);
+            cargarModeloBase(model, session);
             model.addAttribute("editando", true);
             model.addAttribute("editId", id);
             return "ventas-pedidos/pedidos";
         }
 
         try {
+            aplicarFarmaciaSesion(request, session);
             var pedidoActual = service.buscarPorId(id);
             request.setTotal(pedidoActual
                     .map(PedidoResponseDTO::getTotal)
@@ -151,7 +166,7 @@ public class PedidoController {
             redirectAttributes.addFlashAttribute("mensaje", "Pedido actualizado correctamente");
             return "redirect:/pedidos";
         } catch (Exception e) {
-            cargarModeloBase(model);
+            cargarModeloBase(model, session);
             model.addAttribute("editando", true);
             model.addAttribute("editId", id);
             model.addAttribute("error", "No se pudo actualizar el pedido. " + obtenerDetalleError(e));
@@ -163,9 +178,17 @@ public class PedidoController {
     public String cambiarEstado(
             @PathVariable long id,
             @RequestParam EstadoPedido estado,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            HttpSession session) {
 
         try {
+            var pedido = service.buscarPorId(id);
+
+            if (pedido.isPresent() && !puedeGestionarFarmacia(pedido.get().getIdFarmacia(), session)) {
+                redirectAttributes.addFlashAttribute("error", "No tienes permiso para cambiar pedidos de otra farmacia.");
+                return "redirect:/pedidos";
+            }
+
             service.cambiarEstado(id, estado);
             redirectAttributes.addFlashAttribute("mensaje", "Estado del pedido actualizado correctamente");
         } catch (Exception e) {
@@ -175,18 +198,28 @@ public class PedidoController {
         return "redirect:/pedidos";
     }
 
-    private void cargarModeloBase(Model model) {
+    private void cargarModeloBase(Model model, HttpSession session) {
         var pedidos = service.listar();
         var todosClientes = clienteService.listar();
         var todasFarmacias = farmaciaService.listar();
         var todosVendedores = usuarioService.listar();
         var todosRoles = rolService.listar();
 
+        Long idFarmaciaSesion = obtenerIdFarmaciaSesion(session);
+        boolean esAdmin = esAdmin(session);
+
+        if (!esAdmin && idFarmaciaSesion != null) {
+            pedidos = pedidos.stream()
+                    .filter(p -> p.getIdFarmacia() == idFarmaciaSesion)
+                    .toList();
+        }
+
         var clientes = todosClientes.stream()
                 .filter(c -> Boolean.TRUE.equals(c.getActivo()))
                 .toList();
         var farmacias = todasFarmacias.stream()
                 .filter(f -> Boolean.TRUE.equals(f.getActivo()))
+                .filter(f -> esAdmin || idFarmaciaSesion == null || f.getIdFarmacia() == idFarmaciaSesion)
                 .toList();
         var nombresClientes = todosClientes.stream()
                 .collect(Collectors.toMap(
@@ -214,6 +247,7 @@ public class PedidoController {
 
         var vendedores = todosVendedores.stream()
                 .filter(u -> Boolean.TRUE.equals(u.getActivo()))
+                .filter(u -> esAdmin || idFarmaciaSesion == null || u.getIdFarmacia() == idFarmaciaSesion)
                 .filter(u -> {
                     String codigoRol = codigosRoles.get(u.getIdRol());
                     return "ADMINISTRADOR".equals(codigoRol) || "VENDEDOR".equals(codigoRol);
@@ -246,6 +280,50 @@ public class PedidoController {
         model.addAttribute("pedidosPendientes", pendientes);
         model.addAttribute("pedidosEnProceso", confirmados);
         model.addAttribute("pedidosCerrados", cerrados);
+    }
+
+    private void aplicarFarmaciaSesion(PedidoRequestDTO request, HttpSession session) {
+        if (esAdmin(session)) {
+            return;
+        }
+
+        Long idFarmaciaSesion = obtenerIdFarmaciaSesion(session);
+
+        if (idFarmaciaSesion != null) {
+            request.setIdFarmacia(idFarmaciaSesion);
+        }
+    }
+
+    private boolean puedeGestionarFarmacia(long idFarmacia, HttpSession session) {
+        if (esAdmin(session)) {
+            return true;
+        }
+
+        Long idFarmaciaSesion = obtenerIdFarmaciaSesion(session);
+        return idFarmaciaSesion != null && idFarmacia == idFarmaciaSesion;
+    }
+
+    private boolean esAdmin(HttpSession session) {
+        Object rol = session.getAttribute("rolUsuario");
+        return "ADMINISTRADOR".equals(rol) || "ADMIN".equals(rol);
+    }
+
+    private Long obtenerIdFarmaciaSesion(HttpSession session) {
+        Object valor = session.getAttribute("idFarmacia");
+
+        if (valor instanceof Number number) {
+            return number.longValue();
+        }
+
+        if (valor instanceof String texto && !texto.trim().isEmpty()) {
+            try {
+                return Long.parseLong(texto.trim());
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+
+        return null;
     }
 
     private String generarSiguienteNumeroPedido() {

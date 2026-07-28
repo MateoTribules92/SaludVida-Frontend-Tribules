@@ -2,6 +2,7 @@ package com.saludvida.app.controller;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Controller;
@@ -23,6 +24,7 @@ import com.saludvida.app.services.IInventarioService;
 import com.saludvida.app.services.IMovimientoInventarioService;
 import com.saludvida.app.services.IProductoService;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
 @Controller
@@ -46,8 +48,8 @@ public class MovimientoInventarioController {
     }
 
     @GetMapping
-    public String listar(Model model) {
-        cargarModeloBase(model);
+    public String listar(Model model, HttpSession session) {
+        cargarModeloBase(model, session);
 
         if (!model.containsAttribute("request")) {
             model.addAttribute("request", new MovimientoInventarioRequestDTO());
@@ -61,14 +63,21 @@ public class MovimientoInventarioController {
             @Valid @ModelAttribute("request") MovimientoInventarioRequestDTO request,
             BindingResult result,
             Model model,
-            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes,
+            HttpSession session) {
 
         if (result.hasErrors()) {
-            cargarModeloBase(model);
+            cargarModeloBase(model, session);
             return "inventario/movimientos";
         }
 
         try {
+            if (!puedeGestionarInventario(request.getIdInventario(), session)) {
+                model.addAttribute("error", "No puedes registrar movimientos sobre inventario de otra farmacia.");
+                cargarModeloBase(model, session);
+                return "inventario/movimientos";
+            }
+
             if (request.getIdUsuario() != null && request.getIdUsuario() <= 0) {
                 request.setIdUsuario(null);
             }
@@ -77,17 +86,34 @@ public class MovimientoInventarioController {
             redirectAttributes.addFlashAttribute("mensaje", "Movimiento registrado y stock actualizado correctamente");
             return "redirect:/movimientos";
         } catch (Exception e) {
-            cargarModeloBase(model);
+            cargarModeloBase(model, session);
             model.addAttribute("error", "No se pudo registrar el movimiento. Verifica el stock disponible y los datos seleccionados.");
             return "inventario/movimientos";
         }
     }
 
-    private void cargarModeloBase(Model model) {
+    private void cargarModeloBase(Model model, HttpSession session) {
         var inventarios = inventarioService.listar();
         var movimientos = service.listar();
         var farmacias = farmaciaService.listar();
         var productos = productoService.listar();
+
+        Long idFarmaciaSesion = obtenerIdFarmaciaSesion(session);
+        boolean esAdmin = esAdmin(session);
+
+        if (!esAdmin && idFarmaciaSesion != null) {
+            inventarios = inventarios.stream()
+                    .filter(i -> i.getIdFarmacia() == idFarmaciaSesion)
+                    .toList();
+
+            Set<Long> idsInventarioPermitidos = inventarios.stream()
+                    .map(InventarioResponseDTO::getIdInventario)
+                    .collect(Collectors.toSet());
+
+            movimientos = movimientos.stream()
+                    .filter(m -> idsInventarioPermitidos.contains(m.getIdInventario()))
+                    .toList();
+        }
 
         Map<Long, String> nombresFarmacias = farmacias.stream()
                 .collect(Collectors.toMap(
@@ -130,5 +156,44 @@ public class MovimientoInventarioController {
         model.addAttribute("entradas", entradas);
         model.addAttribute("salidas", salidas);
         model.addAttribute("ajustes", ajustes);
+    }
+
+    private boolean puedeGestionarInventario(long idInventario, HttpSession session) {
+        if (esAdmin(session)) {
+            return true;
+        }
+
+        Long idFarmaciaSesion = obtenerIdFarmaciaSesion(session);
+
+        if (idFarmaciaSesion == null) {
+            return false;
+        }
+
+        return inventarioService.buscarPorId(idInventario)
+                .map(i -> i.getIdFarmacia() == idFarmaciaSesion)
+                .orElse(false);
+    }
+
+    private boolean esAdmin(HttpSession session) {
+        Object rol = session.getAttribute("rolUsuario");
+        return "ADMINISTRADOR".equals(rol) || "ADMIN".equals(rol);
+    }
+
+    private Long obtenerIdFarmaciaSesion(HttpSession session) {
+        Object valor = session.getAttribute("idFarmacia");
+
+        if (valor instanceof Number number) {
+            return number.longValue();
+        }
+
+        if (valor instanceof String texto && !texto.trim().isEmpty()) {
+            try {
+                return Long.parseLong(texto.trim());
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+
+        return null;
     }
 }

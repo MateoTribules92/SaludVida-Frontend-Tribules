@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpHeaders;
@@ -30,6 +31,8 @@ import com.saludvida.app.services.IMovimientoInventarioService;
 import com.saludvida.app.services.IPedidoService;
 import com.saludvida.app.services.IProductoService;
 import com.saludvida.app.services.IRutaService;
+
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 @RequestMapping("/reportes")
@@ -61,7 +64,7 @@ public class ReporteController {
     }
 
     @GetMapping
-    public String ver(Model model) {
+    public String ver(Model model, HttpSession session) {
         var pedidos = pedidoService.listar();
         var inventarios = inventarioService.listar();
         var productos = productoService.listar();
@@ -69,6 +72,31 @@ public class ReporteController {
         var clientes = clienteService.listar();
         var rutas = rutaService.listar();
         var movimientos = movimientoService.listar();
+
+        Long idFarmaciaSesion = obtenerIdFarmaciaSesion(session);
+        boolean esAdmin = esAdmin(session);
+
+        if (!esAdmin && idFarmaciaSesion != null) {
+            inventarios = inventarios.stream()
+                    .filter(i -> i.getIdFarmacia() == idFarmaciaSesion)
+                    .toList();
+
+            Set<Long> idsInventarioPermitidos = inventarios.stream()
+                    .map(InventarioResponseDTO::getIdInventario)
+                    .collect(Collectors.toSet());
+
+            movimientos = movimientos.stream()
+                    .filter(m -> idsInventarioPermitidos.contains(m.getIdInventario()))
+                    .toList();
+
+            pedidos = pedidos.stream()
+                    .filter(p -> p.getIdFarmacia() == idFarmaciaSesion)
+                    .toList();
+
+            farmacias = farmacias.stream()
+                    .filter(f -> f.getIdFarmacia() == idFarmaciaSesion)
+                    .toList();
+        }
 
         BigDecimal totalVentas = pedidos.stream()
                 .filter(p -> p.getEstado() == EstadoPedido.ENTREGADO)
@@ -199,12 +227,29 @@ public class ReporteController {
     }
 
     @GetMapping("/csv")
-    public ResponseEntity<String> descargarCsv() {
+    public ResponseEntity<String> descargarCsv(HttpSession session) {
         var pedidos = pedidoService.listar();
         var inventarios = inventarioService.listar();
         var productos = productoService.listar();
         var farmacias = farmaciaService.listar();
         var rutas = rutaService.listar();
+
+        Long idFarmaciaSesion = obtenerIdFarmaciaSesion(session);
+        boolean esAdmin = esAdmin(session);
+
+        if (!esAdmin && idFarmaciaSesion != null) {
+            inventarios = inventarios.stream()
+                    .filter(i -> i.getIdFarmacia() == idFarmaciaSesion)
+                    .toList();
+
+            pedidos = pedidos.stream()
+                    .filter(p -> p.getIdFarmacia() == idFarmaciaSesion)
+                    .toList();
+
+            farmacias = farmacias.stream()
+                    .filter(f -> f.getIdFarmacia() == idFarmaciaSesion)
+                    .toList();
+        }
 
         Map<Long, String> nombresProductos = productos.stream()
                 .collect(Collectors.toMap(
@@ -276,5 +321,28 @@ public class ReporteController {
 
         String texto = valor.toString().replace("\"", "\"\"");
         return "\"" + texto + "\"";
+    }
+
+    private boolean esAdmin(HttpSession session) {
+        Object rol = session.getAttribute("rolUsuario");
+        return "ADMINISTRADOR".equals(rol) || "ADMIN".equals(rol);
+    }
+
+    private Long obtenerIdFarmaciaSesion(HttpSession session) {
+        Object valor = session.getAttribute("idFarmacia");
+
+        if (valor instanceof Number number) {
+            return number.longValue();
+        }
+
+        if (valor instanceof String texto && !texto.trim().isEmpty()) {
+            try {
+                return Long.parseLong(texto.trim());
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+
+        return null;
     }
 }
