@@ -1,10 +1,262 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
-</head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{plantilla/layout :: head('Reportes - SaludVida')}"></head>
 <body>
+<div id="overlay" class="overlay"></div>
+<nav th:replace="~{plantilla/layout :: topbar}"></nav>
+<aside th:replace="~{plantilla/layout :: sidebar}"></aside>
 
+<main id="content" class="content py-10">
+  <div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="fs-3 mb-1">Reportes</h1>
+        <p class="text-secondary mb-0">Resumen operativo para ventas, inventario y distribución.</p>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="/reportes/csv" class="btn btn-success">
+          <i class="ti ti-download"></i>
+          Descargar reporte CSV
+        </a>
+        <span class="badge bg-success-subtle text-success">Gestión</span>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="card p-3 bg-success bg-opacity-10 border-success border-opacity-25">
+          <span class="text-secondary small">Ventas entregadas</span>
+          <strong class="fs-4 text-success" th:text="${'$' + totalVentas}">$0.00</strong>
+          <span class="small text-success">Solo pedidos ENTREGADOS</span>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-3 bg-primary bg-opacity-10 border-primary border-opacity-25">
+          <span class="text-secondary small">Pedidos registrados</span>
+          <strong class="fs-4 text-primary" th:text="${totalPedidos}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-3 bg-warning bg-opacity-10 border-warning border-opacity-25">
+          <span class="text-secondary small">Inventarios con stock bajo</span>
+          <strong class="fs-4 text-warning" th:text="${stockBajo}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-3 bg-danger bg-opacity-10 border-danger border-opacity-25">
+          <span class="text-secondary small">Productos vencidos</span>
+          <strong class="fs-4 text-danger" th:text="${productosVencidos}">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card p-3 bg-warning bg-opacity-10 border-warning border-opacity-25">
+          <span class="text-secondary small">Pedidos por atender</span>
+          <strong class="fs-4 text-warning" th:text="${pedidosPorAtender}">0</strong>
+          <span class="small text-secondary">Pendientes, confirmados o en preparación</span>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 bg-info bg-opacity-10 border-info border-opacity-25">
+          <span class="text-secondary small">Clientes registrados</span>
+          <strong class="fs-4 text-info" th:text="${totalClientes}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card p-3 bg-secondary bg-opacity-10 border-secondary border-opacity-25">
+          <span class="text-secondary small">Farmacias registradas</span>
+          <strong class="fs-4 text-secondary" th:text="${totalFarmacias}">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card p-4 h-100">
+          <h2 class="h5 mb-3">Estado de pedidos</h2>
+          <div class="d-flex justify-content-between py-2 border-bottom">
+            <span>Pendientes</span>
+            <strong class="text-warning" th:text="${pedidosPendientes}">0</strong>
+          </div>
+          <div class="d-flex justify-content-between py-2 border-bottom">
+            <span>En proceso</span>
+            <strong class="text-info" th:text="${pedidosEnProceso}">0</strong>
+          </div>
+          <div class="d-flex justify-content-between py-2">
+            <span>Cerrados</span>
+            <strong class="text-success" th:text="${pedidosCerrados}">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card p-4 h-100">
+          <h2 class="h5 mb-3">Distribución</h2>
+          <div class="d-flex justify-content-between py-2 border-bottom">
+            <span>Rutas planificadas</span>
+            <strong class="text-warning" th:text="${rutasPlanificadas}">0</strong>
+          </div>
+          <div class="d-flex justify-content-between py-2 border-bottom">
+            <span>Rutas en camino</span>
+            <strong class="text-info" th:text="${rutasEnRuta}">0</strong>
+          </div>
+          <div class="d-flex justify-content-between py-2">
+            <span>Rutas cerradas</span>
+            <strong class="text-success" th:text="${rutasCerradas}">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card p-4 h-100">
+          <h2 class="h5 mb-3">Movimientos de inventario</h2>
+          <div class="d-flex justify-content-between py-2 border-bottom">
+            <span>Entradas</span>
+            <strong class="text-success" th:text="${entradas}">0</strong>
+          </div>
+          <div class="d-flex justify-content-between py-2 border-bottom">
+            <span>Salidas</span>
+            <strong class="text-danger" th:text="${salidas}">0</strong>
+          </div>
+          <div class="d-flex justify-content-between py-2">
+            <span>Ajustes</span>
+            <strong class="text-warning" th:text="${ajustes}">0</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <div class="card p-3 bg-primary bg-opacity-10 border-primary border-opacity-25">
+          <span class="text-secondary small">Productos registrados</span>
+          <strong class="fs-4 text-primary" th:text="${totalProductos}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card p-3 bg-success bg-opacity-10 border-success border-opacity-25">
+          <span class="text-secondary small">Productos próximos a caducar</span>
+          <strong class="fs-4 text-success" th:text="${productosPorCaducar}">0</strong>
+          <span class="small text-secondary">Dentro de los próximos 30 días</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h2 class="h5 mb-0">Pedidos recientes</h2>
+        <a href="/pedidos" class="btn btn-sm btn-outline-primary">Ver pedidos</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+          <tr>
+            <th>Número</th>
+            <th>Cliente</th>
+            <th>Estado</th>
+            <th>Total</th>
+            <th>Fecha</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="pedido : ${pedidosRecientes}">
+            <td class="fw-semibold" th:text="${pedido.numeroPedido}">PED-0001</td>
+            <td th:text="${nombresClientes[pedido.idCliente] ?: 'Cliente no encontrado'}">Cliente</td>
+            <td>
+              <span class="badge bg-primary-subtle text-primary" th:text="${pedido.estado}">PENDIENTE</span>
+            </td>
+            <td th:text="${'$' + pedido.total}">$0.00</td>
+            <td th:text="${pedido.fechaPedido != null ? #temporals.format(pedido.fechaPedido, 'dd/MM/yyyy HH:mm') : '-'}">27/07/2026 10:00</td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(pedidosRecientes)}">
+            <td colspan="5" class="text-center text-secondary py-4">No existen pedidos registrados.</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Stock crítico</h2>
+            <a href="/inventarios" class="btn btn-sm btn-outline-primary">Ver inventario</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Farmacia</th>
+                <th>Stock</th>
+                <th>Mínimo</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:each="item : ${inventariosCriticos}">
+                <td class="fw-semibold" th:text="${nombresProductos[item.idProducto] ?: 'Producto no encontrado'}">Producto</td>
+                <td th:text="${nombresFarmacias[item.idFarmacia] ?: 'Farmacia no encontrada'}">Farmacia</td>
+                <td><span class="badge bg-danger-subtle text-danger" th:text="${item.stock}">0</span></td>
+                <td th:text="${item.stockMinimo}">0</td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(inventariosCriticos)}">
+                <td colspan="4" class="text-center text-secondary py-4">No hay inventarios con stock bajo.</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Caducidad de productos</h2>
+            <span class="text-secondary small">
+              Próximos 30 días:
+              <strong th:text="${productosPorCaducar}">0</strong>
+            </span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+              <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th>Caducidad</th>
+                <th>Estado</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:each="producto : ${productosCaducidad}">
+                <td class="fw-semibold" th:text="${producto.codigo}">PROD-0001</td>
+                <td th:text="${producto.nombre}">Producto</td>
+                <td th:text="${producto.fechaCaducidad}">2026-08-01</td>
+                <td>
+                  <span th:if="${producto.fechaCaducidad != null and producto.fechaCaducidad.isBefore(T(java.time.LocalDate).now())}"
+                        class="badge bg-danger-subtle text-danger">Vencido</span>
+                  <span th:if="${producto.fechaCaducidad != null and !producto.fechaCaducidad.isBefore(T(java.time.LocalDate).now()) and !producto.fechaCaducidad.isAfter(T(java.time.LocalDate).now().plusDays(30))}"
+                        class="badge bg-warning-subtle text-warning">Por caducar</span>
+                  <span th:if="${producto.fechaCaducidad != null and producto.fechaCaducidad.isAfter(T(java.time.LocalDate).now().plusDays(30))}"
+                        class="badge bg-success-subtle text-success">Vigente</span>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(productosCaducidad)}">
+                <td colspan="4" class="text-center text-secondary py-4">No hay productos con fecha de caducidad registrada.</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+<th:block th:replace="~{plantilla/layout :: scripts}"></th:block>
 </body>
 </html>

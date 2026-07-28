@@ -58,7 +58,13 @@
 
         <div class="col-md-3">
           <label class="form-label">Codigo</label>
-          <input class="form-control" th:classappend="${#fields.hasErrors('codigo')} ? 'is-invalid'" th:field="*{codigo}" placeholder="MED-001">
+          <input class="form-control"
+                 th:classappend="${#fields.hasErrors('codigo')} ? 'is-invalid'"
+                 th:field="*{codigo}"
+                 readonly
+                 title="El codigo se genera automaticamente al guardar"
+                 placeholder="Generado automaticamente">
+          <div class="form-text" th:if="${!editando}">Se asignara automaticamente al guardar.</div>
           <div class="invalid-feedback" th:if="${#fields.hasErrors('codigo')}" th:errors="*{codigo}"></div>
         </div>
 
@@ -134,7 +140,7 @@
           <tbody>
           <tr th:each="item : ${productos}">
             <td th:text="${item.idProducto}">1</td>
-            <td class="fw-semibold" th:text="${item.codigo}">MED-001</td>
+            <td class="fw-semibold" th:text="${item.codigo}">PROD-0001</td>
             <td th:text="${item.nombre}">Producto</td>
             <td th:text="${nombresCategorias[item.idCategoria] != null ? nombresCategorias[item.idCategoria] : 'Categoria no encontrada'}">Categoria</td>
             <td th:text="${nombresProveedores[item.idProveedor] != null ? nombresProveedores[item.idProveedor] : 'Proveedor no encontrado'}">Proveedor</td>

@@ -1,5 +1,7 @@
 package com.saludvida.app.controller;
 
+import java.util.List;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -21,6 +23,8 @@ import jakarta.validation.Valid;
 @Controller
 @RequestMapping("/clientes")
 public class ClienteController {
+
+    private static final List<String> ZONAS = List.of("Norte", "Centro", "Sur", "Valle");
 
     private final IClienteService service;
 
@@ -157,6 +161,7 @@ public class ClienteController {
         model.addAttribute("clientes", clientes);
         model.addAttribute("tiposCliente", TipoCliente.values());
         model.addAttribute("clasificacionesCliente", ClasificacionCliente.values());
+        model.addAttribute("zonas", ZONAS);
         model.addAttribute("clientesActivos", activos);
         model.addAttribute("clientesFrecuentes", frecuentes);
     }

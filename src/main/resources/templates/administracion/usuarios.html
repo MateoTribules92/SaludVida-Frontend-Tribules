@@ -32,8 +32,8 @@
       </div>
       <div class="col-md-4">
         <div class="card p-3 bg-warning bg-opacity-10 border-warning border-opacity-25">
-          <span class="text-secondary small">Roles disponibles</span>
-          <strong class="fs-4 text-warning" th:text="${#lists.size(roles)}">0</strong>
+          <span class="text-secondary small">Farmacias disponibles</span>
+          <strong class="fs-4 text-warning" th:text="${#lists.size(farmacias)}">0</strong>
         </div>
       </div>
     </div>
@@ -65,6 +65,21 @@
             <option th:each="rol : ${roles}" th:value="${rol.idRol}" th:text="${rol.nombre} + ' (' + ${rol.codigo} + ')'">Rol</option>
           </select>
           <div class="invalid-feedback" th:if="${#fields.hasErrors('idRol')}" th:errors="*{idRol}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Farmacia</label>
+          <select class="form-select"
+                  th:classappend="${#fields.hasErrors('idFarmacia')} ? 'is-invalid'"
+                  th:field="*{idFarmacia}">
+            <option value="0">Seleccione...</option>
+            <option th:each="farmacia : ${farmacias}"
+                    th:value="${farmacia.idFarmacia}"
+                    th:text="${farmacia.nombre + ' - ' + farmacia.zona}">
+              Farmacia
+            </option>
+          </select>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('idFarmacia')}" th:errors="*{idFarmacia}"></div>
         </div>
 
         <div class="col-md-3">
@@ -117,6 +132,7 @@
             <th>Usuario</th>
             <th>Correo</th>
             <th>Rol</th>
+            <th>Farmacia</th>
             <th>Estado</th>
             <th>Creación</th>
             <th class="text-end">Acciones</th>
@@ -128,6 +144,7 @@
             <td class="fw-semibold" th:text="${item.nombres}">Usuario</td>
             <td th:text="${item.correo}">correo</td>
             <td th:text="${nombresRoles[item.idRol] != null ? nombresRoles[item.idRol] : 'Rol no encontrado'}">Rol</td>
+            <td th:text="${nombresFarmacias[item.idFarmacia] != null ? nombresFarmacias[item.idFarmacia] : 'Farmacia no encontrada'}">Farmacia</td>
             <td>
               <span th:if="${item.activo != null and item.activo}" class="badge bg-success-subtle text-success">Activo</span>
               <span th:if="${item.activo != null and !item.activo}" class="badge bg-danger-subtle text-danger">Inactivo</span>
@@ -153,7 +170,7 @@
           </tr>
 
           <tr th:if="${#lists.isEmpty(usuarios)}">
-            <td colspan="7" class="text-center text-secondary py-4">No existen usuarios registrados</td>
+            <td colspan="8" class="text-center text-secondary py-4">No existen usuarios registrados</td>
           </tr>
           </tbody>
         </table>

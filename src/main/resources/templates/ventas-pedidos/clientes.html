@@ -126,10 +126,12 @@
 
         <div class="col-md-3">
           <label class="form-label">Zona</label>
-          <input class="form-control"
-                 th:classappend="${#fields.hasErrors('zona')} ? 'is-invalid'"
-                 th:field="*{zona}"
-                 placeholder="Norte">
+          <select class="form-select"
+                  th:classappend="${#fields.hasErrors('zona')} ? 'is-invalid'"
+                  th:field="*{zona}">
+            <option value="">Seleccione...</option>
+            <option th:each="zonaItem : ${zonas}" th:value="${zonaItem}" th:text="${zonaItem}">Norte</option>
+          </select>
           <div class="invalid-feedback" th:if="${#fields.hasErrors('zona')}" th:errors="*{zona}"></div>
         </div>
 

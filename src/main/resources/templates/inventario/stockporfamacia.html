@@ -1,10 +1,140 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
-</head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{plantilla/layout :: head('Inventario - SaludVida')}"></head>
 <body>
+<div id="overlay" class="overlay"></div>
+<nav th:replace="~{plantilla/layout :: topbar}"></nav>
+<aside th:replace="~{plantilla/layout :: sidebar}"></aside>
 
+<main id="content" class="content py-10">
+  <div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="fs-3 mb-1">Stock por farmacia</h1>
+        <p class="text-secondary mb-0">Controla existencias por sucursal y detecta productos con stock bajo.</p>
+      </div>
+      <span class="badge bg-warning-subtle text-warning">Inventario</span>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <div class="card p-3 bg-success bg-opacity-10 border-success border-opacity-25">
+          <span class="text-secondary small">Registros de inventario</span>
+          <strong class="fs-4 text-success" th:text="${#lists.size(inventarios)}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card p-3 bg-danger bg-opacity-10 border-danger border-opacity-25">
+          <span class="text-secondary small">Productos con stock bajo</span>
+          <strong class="fs-4 text-danger" th:text="${totalStockBajo}">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h2 class="h5 mb-1" th:text="${editando} ? 'Editar inventario' : 'Registrar stock'">Registrar stock</h2>
+          <p class="text-secondary small mb-0">Regla: el inventario no se desactiva; se actualiza el stock y se audita con movimientos.</p>
+        </div>
+        <a th:if="${editando}" href="/inventarios" class="btn btn-sm btn-outline-secondary">Cancelar edicion</a>
+      </div>
+
+      <form method="post"
+            th:action="${editando} ? @{/inventarios/{id}(id=${editId})} : @{/inventarios}"
+            th:object="${request}"
+            class="row g-3"
+            novalidate>
+
+        <div class="col-md-4">
+          <label class="form-label">Farmacia</label>
+          <select class="form-select" th:classappend="${#fields.hasErrors('idFarmacia')} ? 'is-invalid'" th:field="*{idFarmacia}" th:disabled="${editando}">
+            <option value="0">Seleccione...</option>
+            <option th:each="f : ${farmacias}" th:value="${f.idFarmacia}" th:text="${f.nombre} + ' - ' + ${f.zona}"></option>
+          </select>
+          <input th:if="${editando}" type="hidden" th:field="*{idFarmacia}">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('idFarmacia')}" th:errors="*{idFarmacia}"></div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Producto</label>
+          <select class="form-select" th:classappend="${#fields.hasErrors('idProducto')} ? 'is-invalid'" th:field="*{idProducto}" th:disabled="${editando}">
+            <option value="0">Seleccione...</option>
+            <option th:each="p : ${productos}" th:value="${p.idProducto}" th:text="${p.nombre} + ' (' + ${p.codigo} + ')'"></option>
+          </select>
+          <input th:if="${editando}" type="hidden" th:field="*{idProducto}">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('idProducto')}" th:errors="*{idProducto}"></div>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Stock</label>
+          <input type="number" min="0" class="form-control" th:classappend="${#fields.hasErrors('stock')} ? 'is-invalid'" th:field="*{stock}" placeholder="100">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('stock')}" th:errors="*{stock}"></div>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Stock minimo</label>
+          <input type="number" min="0" class="form-control" th:classappend="${#fields.hasErrors('stockMinimo')} ? 'is-invalid'" th:field="*{stockMinimo}" placeholder="20">
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('stockMinimo')}" th:errors="*{stockMinimo}"></div>
+        </div>
+
+        <div class="col-12">
+          <button class="btn btn-primary" type="submit" th:text="${editando} ? 'Actualizar inventario' : 'Guardar inventario'">Guardar inventario</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center px-4 py-3">
+        <h3 class="h5 mb-0">Inventario registrado</h3>
+        <span class="text-secondary small" th:text="${#lists.size(inventarios)} + ' registros'">0 registros</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Farmacia</th>
+            <th>Producto</th>
+            <th>Stock</th>
+            <th>Stock minimo</th>
+            <th>Estado</th>
+            <th>Actualizacion</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="item : ${inventarios}">
+            <td th:text="${item.idInventario}">1</td>
+            <td th:text="${nombresFarmacias[item.idFarmacia] != null ? nombresFarmacias[item.idFarmacia] : 'Farmacia no encontrada'}">Farmacia</td>
+            <td class="fw-semibold" th:text="${nombresProductos[item.idProducto] != null ? nombresProductos[item.idProducto] : 'Producto no encontrado'}">Producto</td>
+            <td th:text="${item.stock}">0</td>
+            <td th:text="${item.stockMinimo}">0</td>
+            <td>
+              <span th:if="${item.stock != null and item.stockMinimo != null and item.stock <= item.stockMinimo}" class="badge bg-danger-subtle text-danger">Stock bajo</span>
+              <span th:if="${item.stock != null and item.stockMinimo != null and item.stock > item.stockMinimo}" class="badge bg-success-subtle text-success">Disponible</span>
+            </td>
+            <td th:text="${item.fechaActualizacion != null ? item.fechaActualizacion : '-'}">-</td>
+            <td class="text-end text-nowrap">
+              <a th:href="@{/inventarios/{id}/editar(id=${item.idInventario})}" class="btn btn-sm btn-outline-primary">Editar</a>
+            </td>
+          </tr>
+
+          <tr th:if="${#lists.isEmpty(inventarios)}">
+            <td colspan="8" class="text-center text-secondary py-4">No existen registros de inventario</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+<th:block th:replace="~{plantilla/layout :: scripts}"></th:block>
 </body>
 </html>

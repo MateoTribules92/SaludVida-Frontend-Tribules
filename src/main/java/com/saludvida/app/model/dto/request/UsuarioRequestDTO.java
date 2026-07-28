@@ -12,6 +12,9 @@ public class UsuarioRequestDTO {
     @Positive(message = "Debe seleccionar un rol")
     private long idRol;
 
+    @Positive(message = "Debe seleccionar una farmacia")
+    private long idFarmacia;
+
     @NotBlank(message = "Los nombres son obligatorios")
     @Size(min = 3, max = 120, message = "Los nombres deben tener entre 3 y 120 caracteres")
     private String nombres;

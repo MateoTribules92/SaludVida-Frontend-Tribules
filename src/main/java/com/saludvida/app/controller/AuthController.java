@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import com.saludvida.app.model.dto.request.LoginRequestDTO;
+import com.saludvida.app.model.dto.response.LoginResponseDTO;
+import com.saludvida.app.services.IAuthService;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -15,8 +17,11 @@ import jakarta.validation.Valid;
 @Controller
 public class AuthController {
 
-    private static final String CORREO_ADMIN = "admin@saludvida.com";
-    private static final String PASSWORD_ADMIN = "admin123";
+    private final IAuthService authService;
+
+    public AuthController(IAuthService authService) {
+        this.authService = authService;
+    }
 
     @GetMapping("/login")
     public String login(Model model, HttpSession session) {
@@ -39,16 +44,21 @@ public class AuthController {
             return "auth/login";
         }
 
-        boolean credencialesValidas = CORREO_ADMIN.equalsIgnoreCase(login.getCorreo())
-                && PASSWORD_ADMIN.equals(login.getPassword());
+        var usuarioAutenticado = authService.login(login);
 
-        if (!credencialesValidas) {
+        if (usuarioAutenticado.isEmpty()) {
             model.addAttribute("error", "Correo o contraseña incorrectos");
             return "auth/login";
         }
 
-        session.setAttribute("usuarioSesion", login.getCorreo());
-        session.setAttribute("nombreUsuario", "Administrador SaludVida");
+        LoginResponseDTO usuario = usuarioAutenticado.get();
+        session.setAttribute("usuarioSesion", usuario.getCorreo());
+        session.setAttribute("idUsuario", usuario.getIdUsuario());
+        session.setAttribute("idRol", usuario.getIdRol());
+        session.setAttribute("idFarmacia", usuario.getIdFarmacia());
+        session.setAttribute("nombreUsuario", usuario.getNombres());
+        session.setAttribute("rolUsuario", usuario.getCodigoRol());
+        session.setAttribute("nombreRol", usuario.getNombreRol());
 
         return "redirect:/home";
     }

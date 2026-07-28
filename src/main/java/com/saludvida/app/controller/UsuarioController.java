@@ -13,8 +13,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.saludvida.app.model.dto.request.UsuarioRequestDTO;
+import com.saludvida.app.model.dto.response.FarmaciaResponseDTO;
 import com.saludvida.app.model.dto.response.RolResponseDTO;
 import com.saludvida.app.model.dto.response.UsuarioResponseDTO;
+import com.saludvida.app.services.IFarmaciaService;
 import com.saludvida.app.services.IRolService;
 import com.saludvida.app.services.IUsuarioService;
 
@@ -26,10 +28,12 @@ public class UsuarioController {
 
     private final IUsuarioService service;
     private final IRolService rolService;
+    private final IFarmaciaService farmaciaService;
 
-    public UsuarioController(IUsuarioService service, IRolService rolService) {
+    public UsuarioController(IUsuarioService service, IRolService rolService, IFarmaciaService farmaciaService) {
         this.service = service;
         this.rolService = rolService;
+        this.farmaciaService = farmaciaService;
     }
 
     @GetMapping
@@ -68,7 +72,7 @@ public class UsuarioController {
         } catch (Exception e) {
             cargarModeloBase(model);
             model.addAttribute("editando", false);
-            model.addAttribute("error", "No se pudo crear el usuario. Verifica que el correo no esté duplicado y que el rol exista.");
+            model.addAttribute("error", "No se pudo crear el usuario. Verifica que el correo no esté duplicado y que el rol/farmacia existan.");
             return "administracion/usuarios";
         }
     }
@@ -85,6 +89,7 @@ public class UsuarioController {
         UsuarioResponseDTO response = usuario.get();
         UsuarioRequestDTO request = new UsuarioRequestDTO();
         request.setIdRol(response.getIdRol());
+        request.setIdFarmacia(response.getIdFarmacia());
         request.setNombres(response.getNombres());
         request.setCorreo(response.getCorreo());
         request.setActivo(response.getActivo());
@@ -142,8 +147,12 @@ public class UsuarioController {
     private void cargarModeloBase(Model model) {
         var usuarios = service.listar();
         var todosRoles = rolService.listar();
+        var todasFarmacias = farmaciaService.listar();
         var rolesActivos = todosRoles.stream()
                 .filter(r -> Boolean.TRUE.equals(r.getActivo()))
+                .toList();
+        var farmaciasActivas = todasFarmacias.stream()
+                .filter(f -> Boolean.TRUE.equals(f.getActivo()))
                 .toList();
 
         var nombresRoles = todosRoles.stream()
@@ -152,13 +161,21 @@ public class UsuarioController {
                         RolResponseDTO::getNombre,
                         (actual, repetido) -> actual));
 
+        var nombresFarmacias = todasFarmacias.stream()
+                .collect(Collectors.toMap(
+                        FarmaciaResponseDTO::getIdFarmacia,
+                        f -> f.getNombre() + " - " + f.getZona(),
+                        (actual, repetido) -> actual));
+
         long activos = usuarios.stream()
                 .filter(u -> Boolean.TRUE.equals(u.getActivo()))
                 .count();
 
         model.addAttribute("usuarios", usuarios);
         model.addAttribute("roles", rolesActivos);
+        model.addAttribute("farmacias", farmaciasActivas);
         model.addAttribute("nombresRoles", nombresRoles);
+        model.addAttribute("nombresFarmacias", nombresFarmacias);
         model.addAttribute("usuariosActivos", activos);
     }
 }

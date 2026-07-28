@@ -14,7 +14,6 @@ import lombok.Data;
 @Data
 public class ProductoRequestDTO {
 
-    @NotBlank(message = "El codigo del producto es obligatorio")
     @Size(min = 3, max = 50, message = "El codigo debe tener entre 3 y 50 caracteres")
     private String codigo;
 

@@ -1,0 +1,98 @@
+/*
+ * Ajustes propios de SaludVida.
+ * Se carga después del CSS del template para evitar tocar archivos minificados.
+ */
+
+.sidebar {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(17, 24, 39, 0.25) transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(17, 24, 39, 0.25);
+  border-radius: 999px;
+}
+
+.sidebar .nav {
+  padding-bottom: 2rem;
+}
+
+.logo-area {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #fff;
+  overflow: hidden;
+}
+
+.logo-area a {
+  width: 100%;
+  min-width: 0;
+}
+
+.logo-full {
+  display: block;
+  max-height: 34px;
+  max-width: 175px;
+  width: auto;
+}
+
+.logo-icon {
+  display: none;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+/* Estados comunes usados por templates para sidebar colapsado */
+body.sidebar-collapsed .sidebar .logo-area,
+body.sidebar-mini .sidebar .logo-area,
+body.mini-sidebar .sidebar .logo-area,
+.sidebar.collapsed .logo-area,
+.sidebar.sidebar-collapsed .logo-area,
+.sidebar.mini .logo-area {
+  display: flex;
+  justify-content: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+body.sidebar-collapsed .sidebar .logo-full,
+body.sidebar-mini .sidebar .logo-full,
+body.mini-sidebar .sidebar .logo-full,
+.sidebar.collapsed .logo-full,
+.sidebar.sidebar-collapsed .logo-full,
+.sidebar.mini .logo-full {
+  display: none !important;
+}
+
+body.sidebar-collapsed .sidebar .logo-icon,
+body.sidebar-mini .sidebar .logo-icon,
+body.mini-sidebar .sidebar .logo-icon,
+.sidebar.collapsed .logo-icon,
+.sidebar.sidebar-collapsed .logo-icon,
+.sidebar.mini .logo-icon {
+  display: block !important;
+}
+
+body.sidebar-collapsed .sidebar .nav-link,
+body.sidebar-mini .sidebar .nav-link,
+body.mini-sidebar .sidebar .nav-link,
+.sidebar.collapsed .nav-link,
+.sidebar.sidebar-collapsed .nav-link,
+.sidebar.mini .nav-link {
+  justify-content: center;
+}

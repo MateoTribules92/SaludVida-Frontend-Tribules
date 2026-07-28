@@ -41,4 +41,8 @@ abstract class ClientSupport {
     protected void patch(String uri) {
         webClient.patch().uri(uri).retrieve().toBodilessEntity().block();
     }
+
+    protected void delete(String uri) {
+        webClient.delete().uri(uri).retrieve().toBodilessEntity().block();
+    }
 }

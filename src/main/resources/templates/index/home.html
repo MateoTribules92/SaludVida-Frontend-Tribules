@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{plantilla/layout :: head('Dashboard - SaludVida')}"></head>
 <body>
@@ -7,25 +7,248 @@
 <aside th:replace="~{plantilla/layout :: sidebar}"></aside>
 <main id="content" class="content py-10">
   <div class="container-fluid">
-    <div class="mb-4">
-      <h1 class="fs-3 mb-1">Dashboard SaludVida</h1>
-      <p class="text-secondary">Resumen operativo de farmacia, inventario, ventas y distribución.</p>
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+      <div>
+        <h1 class="fs-3 mb-1">Dashboard SaludVida</h1>
+        <p class="text-secondary mb-0">Resumen operativo de farmacia, inventario, ventas y distribución.</p>
+      </div>
+      <a href="/reportes" class="btn btn-outline-primary">
+        <i class="ti ti-chart-bar"></i>
+        Ver reportes
+      </a>
     </div>
-    <div class="row g-3 mb-3">
-      <div class="col-lg-3 col-12"><div class="card p-4 bg-primary bg-opacity-10 border-primary border-opacity-25"><h2 class="fs-6">Productos</h2><h3 th:text="${totalProductos}">0</h3><p class="text-primary mb-0 small">Catálogo registrado</p></div></div>
-      <div class="col-lg-3 col-12"><div class="card p-4 bg-success bg-opacity-10 border-success border-opacity-25"><h2 class="fs-6">Inventarios</h2><h3 th:text="${totalInventarios}">0</h3><p class="text-success mb-0 small">Stock por farmacia</p></div></div>
-      <div class="col-lg-3 col-12"><div class="card p-4 bg-info bg-opacity-10 border-info border-opacity-25"><h2 class="fs-6">Pedidos</h2><h3 th:text="${totalPedidos}">0</h3><p class="text-info mb-0 small">Pedidos registrados</p></div></div>
-      <div class="col-lg-3 col-12"><div class="card p-4 bg-warning bg-opacity-10 border-warning border-opacity-25"><h2 class="fs-6">Vehículos</h2><h3 th:text="${totalVehiculos}">0</h3><p class="text-warning mb-0 small">Flota disponible/controlada</p></div></div>
+
+    <div th:if="${param.noAutorizado}" class="alert alert-warning">
+      No tienes permisos para acceder a ese módulo. El menú muestra las opciones disponibles para tu rol.
     </div>
-    <div class="card p-4">
-      <h2 class="h5">Reglas de negocio priorizadas</h2>
-      <ul class="mb-0">
-        <li>Controlar stock bajo por farmacia.</li>
-        <li>Evitar eliminaciÃ³n fÃ­sica: usar activar/desactivar.</li>
-        <li>Gestionar estados de pedidos y rutas.</li>
-        <li>Identificar productos vencidos o prÃ³ximos a caducar.</li>
-      </ul>
+
+    <div class="row g-3 mb-4">
+      <div class="col-lg-3 col-12">
+        <div class="card p-4 bg-primary bg-opacity-10 border-primary border-opacity-25">
+          <span class="text-secondary small">Productos</span>
+          <h3 class="mb-1" th:text="${totalProductos}">0</h3>
+          <a href="/productos" class="small text-primary text-decoration-none">Catálogo registrado →</a>
+        </div>
+      </div>
+      <div class="col-lg-3 col-12">
+        <div class="card p-4 bg-success bg-opacity-10 border-success border-opacity-25">
+          <span class="text-secondary small">Inventarios</span>
+          <h3 class="mb-1" th:text="${totalInventarios}">0</h3>
+          <a href="/inventarios" class="small text-success text-decoration-none">Stock por farmacia →</a>
+        </div>
+      </div>
+      <div class="col-lg-3 col-12">
+        <div class="card p-4 bg-info bg-opacity-10 border-info border-opacity-25">
+          <span class="text-secondary small">Pedidos totales</span>
+          <h3 class="mb-1" th:text="${totalPedidos}">0</h3>
+          <a href="/pedidos" class="small text-info text-decoration-none">Pedidos registrados →</a>
+        </div>
+      </div>
+      <div class="col-lg-3 col-12">
+        <div class="card p-4 bg-warning bg-opacity-10 border-warning border-opacity-25">
+          <span class="text-secondary small">Vehículos registrados</span>
+          <h3 class="mb-1" th:text="${totalVehiculos}">0</h3>
+          <a href="/vehiculos" class="small text-warning text-decoration-none">Flota controlada →</a>
+        </div>
+      </div>
     </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="card p-3 border-danger bg-danger-subtle">
+          <span class="text-secondary small">Stock bajo</span>
+          <strong class="fs-4 text-danger" th:text="${stockBajo}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-3 border-danger bg-danger-subtle">
+          <span class="text-secondary small">Productos vencidos</span>
+          <strong class="fs-4 text-danger" th:text="${productosVencidos}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-3 border-warning bg-warning-subtle">
+          <span class="text-secondary small">Próximos a caducar</span>
+          <strong class="fs-4 text-warning" th:text="${productosPorCaducar}">0</strong>
+          <span class="small text-secondary">Dentro de 30 días</span>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card p-3 border-info bg-info-subtle">
+          <span class="text-secondary small">Rutas en camino</span>
+          <strong class="fs-4 text-info" th:text="${rutasEnRuta}">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-lg-4">
+        <div class="card p-4 h-100">
+          <h2 class="h5 mb-3">Pedidos</h2>
+          <div class="d-flex justify-content-between py-2 border-bottom">
+            <span>Pendientes</span>
+            <strong class="text-warning" th:text="${pedidosPendientes}">0</strong>
+          </div>
+          <div class="d-flex justify-content-between py-2 border-bottom">
+            <span>En proceso</span>
+            <strong class="text-info" th:text="${pedidosEnProceso}">0</strong>
+          </div>
+          <div class="d-flex justify-content-between py-2">
+            <span>Cerrados</span>
+            <strong class="text-success" th:text="${pedidosCerrados}">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card p-4 h-100">
+          <h2 class="h5 mb-3">Distribución</h2>
+          <div class="d-flex justify-content-between py-2 border-bottom">
+            <span>Rutas planificadas</span>
+            <strong class="text-warning" th:text="${rutasPlanificadas}">0</strong>
+          </div>
+          <div class="d-flex justify-content-between py-2 border-bottom">
+            <span>Rutas en camino</span>
+            <strong class="text-info" th:text="${rutasEnRuta}">0</strong>
+          </div>
+          <div class="d-flex justify-content-between py-2">
+            <span>Farmacias</span>
+            <strong class="text-secondary" th:text="${totalFarmacias}">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card p-4 h-100">
+          <h2 class="h5 mb-3">Acciones rápidas</h2>
+          <div class="d-grid gap-2">
+            <a href="/pedidos" class="btn btn-outline-primary">
+              <i class="ti ti-receipt"></i>
+              Gestionar pedidos
+            </a>
+            <a href="/movimientos" class="btn btn-outline-success">
+              <i class="ti ti-arrows-exchange"></i>
+              Registrar movimiento
+            </a>
+            <a href="/ruta-pedidos" class="btn btn-outline-info">
+              <i class="ti ti-route"></i>
+              Asignar pedidos a ruta
+            </a>
+            <a href="/reportes/csv" class="btn btn-outline-secondary">
+              <i class="ti ti-download"></i>
+              Descargar reporte CSV
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h2 class="h5 mb-1">Prioridades del día</h2>
+          <p class="text-secondary small mb-0">Atajos operativos según las reglas de negocio más importantes.</p>
+        </div>
+        <span class="badge bg-warning-subtle text-warning">Operativo</span>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-3">
+          <a href="/inventarios" class="card p-3 h-100 text-decoration-none border-danger border-opacity-25 bg-danger bg-opacity-10">
+            <span class="text-secondary small">Revisar stock bajo</span>
+            <strong class="fs-5 text-danger" th:text="${stockBajo}">0</strong>
+            <span class="small text-secondary">Evita ventas sin disponibilidad.</span>
+          </a>
+        </div>
+        <div class="col-md-3">
+          <a href="/pedidos" class="card p-3 h-100 text-decoration-none border-warning border-opacity-25 bg-warning bg-opacity-10">
+            <span class="text-secondary small">Confirmar pedidos pendientes</span>
+            <strong class="fs-5 text-warning" th:text="${pedidosPendientes}">0</strong>
+            <span class="small text-secondary">Antes de preparar o enviar.</span>
+          </a>
+        </div>
+        <div class="col-md-3">
+          <a href="/ruta-pedidos" class="card p-3 h-100 text-decoration-none border-info border-opacity-25 bg-info bg-opacity-10">
+            <span class="text-secondary small">Asignar pedidos a ruta</span>
+            <strong class="fs-5 text-info" th:text="${rutasPlanificadas}">0</strong>
+            <span class="small text-secondary">Usa rutas planificadas disponibles.</span>
+          </a>
+        </div>
+        <div class="col-md-3">
+          <a href="/productos" class="card p-3 h-100 text-decoration-none border-primary border-opacity-25 bg-primary bg-opacity-10">
+            <span class="text-secondary small">Verificar caducidad</span>
+            <strong class="fs-5 text-primary" th:text="${productosPorCaducar}">0</strong>
+            <span class="small text-secondary">Controla productos próximos a vencer.</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Inventario que requiere atención</h2>
+            <a href="/inventarios" class="btn btn-sm btn-outline-primary">Ver todo</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Farmacia</th>
+                <th>Stock</th>
+                <th>Mínimo</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:each="item : ${inventariosCriticos}">
+                <td class="fw-semibold" th:text="${nombresProductos[item.idProducto] ?: 'Producto no encontrado'}">Producto</td>
+                <td th:text="${nombresFarmacias[item.idFarmacia] ?: 'Farmacia no encontrada'}">Farmacia</td>
+                <td><span class="badge bg-danger-subtle text-danger" th:text="${item.stock}">0</span></td>
+                <td th:text="${item.stockMinimo}">0</td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(inventariosCriticos)}">
+                <td colspan="4" class="text-center text-secondary py-4">No hay stock bajo por el momento.</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Caducidad próxima</h2>
+            <a href="/productos" class="btn btn-sm btn-outline-primary">Ver productos</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+              <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th>Caducidad</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:each="producto : ${productosCaducidad}">
+                <td class="fw-semibold" th:text="${producto.codigo}">PROD-0001</td>
+                <td th:text="${producto.nombre}">Producto</td>
+                <td th:text="${producto.fechaCaducidad}">2026-08-01</td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(productosCaducidad)}">
+                <td colspan="3" class="text-center text-secondary py-4">No hay productos con caducidad registrada.</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </main>
 <th:block th:replace="~{plantilla/layout :: scripts}"></th:block>

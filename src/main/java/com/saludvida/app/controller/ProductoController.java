@@ -48,7 +48,9 @@ public class ProductoController {
         cargarModeloBase(model);
 
         if (!model.containsAttribute("request")) {
-            model.addAttribute("request", new ProductoRequestDTO());
+            ProductoRequestDTO request = new ProductoRequestDTO();
+            request.setCodigo(generarSiguienteCodigoProducto());
+            model.addAttribute("request", request);
         }
 
         if (!model.containsAttribute("editando")) {
@@ -72,6 +74,7 @@ public class ProductoController {
         }
 
         try {
+            request.setCodigo(null);
             request.setActivo(true);
             service.crear(request);
             redirectAttributes.addFlashAttribute("mensaje", "Producto creado correctamente");
@@ -79,7 +82,7 @@ public class ProductoController {
         } catch (Exception e) {
             cargarModeloBase(model);
             model.addAttribute("editando", false);
-            model.addAttribute("error", "No se pudo crear el producto. Verifica que el codigo no este duplicado y que categoria/proveedor existan.");
+            model.addAttribute("error", "No se pudo crear el producto. Verifica que categoria/proveedor existan y que la informacion sea valida.");
             return "inventario/productos";
         }
     }
@@ -190,6 +193,24 @@ public class ProductoController {
         model.addAttribute("limiteCaducidad", LocalDate.now().plusDays(DIAS_ALERTA_CADUCIDAD));
         model.addAttribute("totalVencidos", productos.stream().filter(this::estaVencido).count());
         model.addAttribute("totalProximos", productos.stream().filter(this::estaProximoCaducar).count());
+    }
+
+    private String generarSiguienteCodigoProducto() {
+        int ultimo = service.listar().stream()
+                .map(ProductoResponseDTO::getCodigo)
+                .filter(codigo -> codigo != null && codigo.matches("^PROD-[0-9]+$"))
+                .map(codigo -> codigo.substring(5))
+                .mapToInt(codigo -> {
+                    try {
+                        return Integer.parseInt(codigo);
+                    } catch (NumberFormatException e) {
+                        return 0;
+                    }
+                })
+                .max()
+                .orElse(0);
+
+        return "PROD-" + String.format("%04d", ultimo + 1);
     }
 
     private boolean estaVencido(ProductoResponseDTO producto) {
