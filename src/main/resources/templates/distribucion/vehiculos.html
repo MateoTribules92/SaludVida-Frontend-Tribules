@@ -1,10 +1,190 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
-</head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{plantilla/layout :: head('Vehículos - SaludVida')}"></head>
 <body>
+<div id="overlay" class="overlay"></div>
+<nav th:replace="~{plantilla/layout :: topbar}"></nav>
+<aside th:replace="~{plantilla/layout :: sidebar}"></aside>
 
+<main id="content" class="content py-10">
+  <div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+      <div>
+        <h1 class="fs-3 mb-1">Vehículos</h1>
+        <p class="text-secondary mb-0">Administra la flota disponible para distribución y rutas de entrega.</p>
+      </div>
+      <span class="badge bg-info-subtle text-info">Distribución</span>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card border-success bg-success-subtle p-3">
+          <span class="text-secondary small">Vehículos disponibles</span>
+          <strong class="fs-4 text-success" th:text="${vehiculosDisponibles}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-warning bg-warning-subtle p-3">
+          <span class="text-secondary small">En mantenimiento</span>
+          <strong class="fs-4 text-warning" th:text="${vehiculosMantenimiento}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-primary bg-primary-subtle p-3">
+          <span class="text-secondary small">Vehículos activos</span>
+          <strong class="fs-4 text-primary" th:text="${vehiculosActivos}">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h2 class="h5 mb-1" th:text="${editando} ? 'Editar vehículo' : 'Nuevo vehículo'">Nuevo vehículo</h2>
+          <p class="text-secondary small mb-0">Reglas: placa única, capacidades mayores a cero y desactivación lógica para auditoría.</p>
+        </div>
+        <a th:if="${editando}" th:href="@{/vehiculos}" class="btn btn-sm btn-outline-secondary">Cancelar edición</a>
+      </div>
+
+      <form method="post"
+            th:action="${editando} ? @{/vehiculos/{id}/actualizar(id=${editId})} : @{/vehiculos}"
+            th:object="${request}"
+            class="row g-3">
+
+        <input type="hidden" th:field="*{activo}">
+
+        <div class="col-md-3">
+          <label class="form-label">Placa</label>
+          <input class="form-control text-uppercase"
+                 th:field="*{placa}"
+                 placeholder="PBC-1234"
+                 maxlength="20"
+                 required>
+          <div class="text-danger small mt-1" th:if="${#fields.hasErrors('placa')}" th:errors="*{placa}"></div>
+        </div>
+
+        <div class="col-md-5">
+          <label class="form-label">Descripción</label>
+          <input class="form-control"
+                 th:field="*{descripcion}"
+                 placeholder="Camioneta para entregas zona norte"
+                 maxlength="150">
+          <div class="text-danger small mt-1" th:if="${#fields.hasErrors('descripcion')}" th:errors="*{descripcion}"></div>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Capacidad pedidos</label>
+          <input class="form-control"
+                 type="number"
+                 min="1"
+                 th:field="*{capacidadPedidos}"
+                 placeholder="10"
+                 required>
+          <div class="text-danger small mt-1" th:if="${#fields.hasErrors('capacidadPedidos')}" th:errors="*{capacidadPedidos}"></div>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Capacidad kg</label>
+          <input class="form-control"
+                 type="number"
+                 min="0.01"
+                 step="0.01"
+                 th:field="*{capacidadKg}"
+                 placeholder="80.00"
+                 required>
+          <div class="text-danger small mt-1" th:if="${#fields.hasErrors('capacidadKg')}" th:errors="*{capacidadKg}"></div>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Estado</label>
+          <select class="form-select" th:field="*{estado}" required>
+            <option value="">Seleccione...</option>
+            <option th:each="estado : ${estados}"
+                    th:value="${estado}"
+                    th:text="${estado}">
+              DISPONIBLE
+            </option>
+          </select>
+          <div class="form-text">Si seleccionas INACTIVO, el vehículo queda desactivado.</div>
+          <div class="text-danger small mt-1" th:if="${#fields.hasErrors('estado')}" th:errors="*{estado}"></div>
+        </div>
+
+        <div class="col-md-8 d-flex align-items-end">
+          <button class="btn btn-primary px-5" type="submit" th:text="${editando} ? 'Actualizar vehículo' : 'Guardar'">Guardar</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h2 class="h5 mb-0">Listado de vehículos</h2>
+        <span class="text-secondary small" th:text="${totalVehiculos} + ' registros'">0 registros</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Placa</th>
+            <th>Descripción</th>
+            <th>Cap. pedidos</th>
+            <th>Cap. kg</th>
+            <th>Estado</th>
+            <th>Activo</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="item : ${vehiculos}">
+            <td th:text="${item.idVehiculo}">1</td>
+            <td class="fw-semibold" th:text="${item.placa}">PBC-1234</td>
+            <td th:text="${item.descripcion}">Camioneta</td>
+            <td th:text="${item.capacidadPedidos}">10</td>
+            <td th:text="${item.capacidadKg}">80.00</td>
+            <td>
+              <span class="badge"
+                    th:classappend="${item.estado != null and item.estado.name() == 'DISPONIBLE'} ? ' bg-success-subtle text-success' :
+                                    (${item.estado != null and item.estado.name() == 'MANTENIMIENTO'} ? ' bg-warning-subtle text-warning' :
+                                    (${item.estado != null and item.estado.name() == 'OCUPADO'} ? ' bg-info-subtle text-info' : ' bg-danger-subtle text-danger'))"
+                    th:text="${item.estado}">
+                DISPONIBLE
+              </span>
+            </td>
+            <td>
+              <span th:if="${item.activo != null and item.activo}" class="badge bg-success-subtle text-success">Activo</span>
+              <span th:if="${item.activo == null or !item.activo}" class="badge bg-danger-subtle text-danger">Inactivo</span>
+            </td>
+            <td class="text-end text-nowrap">
+              <a th:href="@{/vehiculos/{id}/editar(id=${item.idVehiculo})}" class="btn btn-sm btn-outline-primary">Editar</a>
+              <form th:if="${item.activo != null and item.activo}"
+                    th:action="@{/vehiculos/{id}/desactivar(id=${item.idVehiculo})}"
+                    method="post"
+                    class="d-inline">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Desactivar</button>
+              </form>
+              <form th:if="${item.activo == null or !item.activo}"
+                    th:action="@{/vehiculos/{id}/activar(id=${item.idVehiculo})}"
+                    method="post"
+                    class="d-inline">
+                <button class="btn btn-sm btn-outline-success" type="submit">Activar</button>
+              </form>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(vehiculos)}">
+            <td colspan="8" class="text-center text-secondary py-4">No existen vehículos registrados</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<th:block th:replace="~{plantilla/layout :: scripts}"></th:block>
 </body>
 </html>
