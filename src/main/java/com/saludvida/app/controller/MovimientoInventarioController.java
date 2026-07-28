@@ -18,11 +18,13 @@ import com.saludvida.app.model.dto.request.MovimientoInventarioRequestDTO;
 import com.saludvida.app.model.dto.response.FarmaciaResponseDTO;
 import com.saludvida.app.model.dto.response.InventarioResponseDTO;
 import com.saludvida.app.model.dto.response.ProductoResponseDTO;
+import com.saludvida.app.model.dto.response.UsuarioResponseDTO;
 import com.saludvida.app.model.enums.TipoMovimiento;
 import com.saludvida.app.services.IFarmaciaService;
 import com.saludvida.app.services.IInventarioService;
 import com.saludvida.app.services.IMovimientoInventarioService;
 import com.saludvida.app.services.IProductoService;
+import com.saludvida.app.services.IUsuarioService;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -35,16 +37,19 @@ public class MovimientoInventarioController {
     private final IInventarioService inventarioService;
     private final IFarmaciaService farmaciaService;
     private final IProductoService productoService;
+    private final IUsuarioService usuarioService;
 
     public MovimientoInventarioController(
             IMovimientoInventarioService service,
             IInventarioService inventarioService,
             IFarmaciaService farmaciaService,
-            IProductoService productoService) {
+            IProductoService productoService,
+            IUsuarioService usuarioService) {
         this.service = service;
         this.inventarioService = inventarioService;
         this.farmaciaService = farmaciaService;
         this.productoService = productoService;
+        this.usuarioService = usuarioService;
     }
 
     @GetMapping
@@ -78,9 +83,7 @@ public class MovimientoInventarioController {
                 return "inventario/movimientos";
             }
 
-            if (request.getIdUsuario() != null && request.getIdUsuario() <= 0) {
-                request.setIdUsuario(null);
-            }
+            request.setIdUsuario(obtenerIdUsuarioSesion(session));
 
             service.registrar(request);
             redirectAttributes.addFlashAttribute("mensaje", "Movimiento registrado y stock actualizado correctamente");
@@ -97,6 +100,7 @@ public class MovimientoInventarioController {
         var movimientos = service.listar();
         var farmacias = farmaciaService.listar();
         var productos = productoService.listar();
+        var usuarios = usuarioService.listar();
 
         Long idFarmaciaSesion = obtenerIdFarmaciaSesion(session);
         boolean esAdmin = esAdmin(session);
@@ -127,6 +131,12 @@ public class MovimientoInventarioController {
                         producto -> producto,
                         (actual, repetido) -> actual));
 
+        Map<Long, String> nombresUsuarios = usuarios.stream()
+                .collect(Collectors.toMap(
+                        UsuarioResponseDTO::getIdUsuario,
+                        UsuarioResponseDTO::getNombres,
+                        (actual, repetido) -> actual));
+
         Map<Long, String> nombresInventarios = new HashMap<>();
         for (InventarioResponseDTO inventario : inventarios) {
             ProductoResponseDTO producto = productosPorId.get(inventario.getIdProducto());
@@ -153,6 +163,8 @@ public class MovimientoInventarioController {
         model.addAttribute("movimientos", movimientos);
         model.addAttribute("tiposMovimiento", TipoMovimiento.values());
         model.addAttribute("nombresInventarios", nombresInventarios);
+        model.addAttribute("nombresUsuarios", nombresUsuarios);
+        model.addAttribute("usuarioMovimiento", obtenerNombreUsuarioSesion(session));
         model.addAttribute("entradas", entradas);
         model.addAttribute("salidas", salidas);
         model.addAttribute("ajustes", ajustes);
@@ -195,5 +207,28 @@ public class MovimientoInventarioController {
         }
 
         return null;
+    }
+
+    private Long obtenerIdUsuarioSesion(HttpSession session) {
+        Object valor = session.getAttribute("idUsuario");
+
+        if (valor instanceof Number number) {
+            return number.longValue();
+        }
+
+        if (valor instanceof String texto && !texto.trim().isEmpty()) {
+            try {
+                return Long.parseLong(texto.trim());
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    private String obtenerNombreUsuarioSesion(HttpSession session) {
+        Object valor = session.getAttribute("nombreUsuario");
+        return valor != null ? valor.toString() : "Usuario logueado";
     }
 }

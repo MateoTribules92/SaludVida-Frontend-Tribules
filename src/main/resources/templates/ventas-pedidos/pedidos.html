@@ -66,7 +66,6 @@
                  readonly
                  title="El número se genera automáticamente al guardar"
                  placeholder="Generado automáticamente">
-          <div class="form-text" th:if="${!editando}">Se asignará automáticamente al guardar.</div>
           <div class="invalid-feedback" th:if="${#fields.hasErrors('numeroPedido')}" th:errors="*{numeroPedido}"></div>
         </div>
 
@@ -92,7 +91,7 @@
           <div class="invalid-feedback" th:if="${#fields.hasErrors('idFarmacia')}" th:errors="*{idFarmacia}"></div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-3" th:if="${esAdmin}">
           <label class="form-label">Vendedor</label>
           <select class="form-select"
                   th:classappend="${#fields.hasErrors('idVendedor')} ? 'is-invalid'"
@@ -100,6 +99,14 @@
             <option value="0">Seleccione...</option>
             <option th:each="vendedor : ${vendedores}" th:value="${vendedor.idUsuario}" th:text="${vendedor.nombres}">Vendedor</option>
           </select>
+          <div class="invalid-feedback" th:if="${#fields.hasErrors('idVendedor')}" th:errors="*{idVendedor}"></div>
+        </div>
+
+        <div class="col-md-3" th:if="${!esAdmin}">
+          <label class="form-label">Vendedor</label>
+          <input type="text" class="form-control" th:value="${vendedorMovimiento}" disabled>
+          <input type="hidden" th:field="*{idVendedor}">
+          <div class="form-text">Asignado por sesión.</div>
           <div class="invalid-feedback" th:if="${#fields.hasErrors('idVendedor')}" th:errors="*{idVendedor}"></div>
         </div>
 
@@ -113,7 +120,7 @@
                   th:field="*{estado}">
             <option th:value="PENDIENTE">PENDIENTE</option>
           </select>
-          <div class="form-text" th:if="${!editando}">Los cambios de estado se realizan desde el listado.</div>
+          <div class="form-text" th:if="${!editando}">El pedido inicia pendiente.</div>
           <div class="invalid-feedback" th:if="${#fields.hasErrors('estado')}" th:errors="*{estado}"></div>
         </div>
 
@@ -122,7 +129,7 @@
           <input class="form-control"
                  th:value="${editando and request.total != null ? request.total : '0.00'}"
                  readonly>
-          <div class="form-text">Se calcula automáticamente desde productos por pedido.</div>
+          <div class="form-text">Calculado desde el detalle.</div>
         </div>
 
         <div class="col-md-6">

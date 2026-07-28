@@ -90,8 +90,8 @@
 
         <div class="col-md-2">
           <label class="form-label">Usuario</label>
-          <input type="text" class="form-control" value="Sistema" disabled>
-          <small class="text-secondary">Luego se tomará del login.</small>
+          <input type="text" class="form-control" th:value="${usuarioMovimiento}" disabled>
+          <small class="text-secondary">Se asigna automáticamente desde el login.</small>
         </div>
 
         <div class="col-md-10">
@@ -134,7 +134,7 @@
               <span th:if="${item.tipoMovimiento != null and item.tipoMovimiento.name() == 'AJUSTE'}" class="badge bg-warning-subtle text-warning">AJUSTE</span>
             </td>
             <td class="fw-semibold" th:text="${item.cantidad}">0</td>
-            <td th:text="${item.idUsuario != null ? item.idUsuario : '-'}">-</td>
+            <td th:text="${item.idUsuario != null ? nombresUsuarios[item.idUsuario] : '-'}">-</td>
             <td th:text="${item.motivo != null and !#strings.isEmpty(item.motivo) ? item.motivo : '-'}">-</td>
             <td th:text="${item.fechaMovimiento != null ? item.fechaMovimiento : '-'}">-</td>
           </tr>

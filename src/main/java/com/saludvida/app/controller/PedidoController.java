@@ -60,6 +60,7 @@ public class PedidoController {
         if (!model.containsAttribute("request")) {
             PedidoRequestDTO request = new PedidoRequestDTO();
             request.setNumeroPedido(generarSiguienteNumeroPedido());
+            aplicarDatosSesion(request, session);
             model.addAttribute("request", request);
         }
 
@@ -85,7 +86,7 @@ public class PedidoController {
         }
 
         try {
-            aplicarFarmaciaSesion(request, session);
+            aplicarDatosSesion(request, session);
             request.setNumeroPedido(null);
             request.setEstado(EstadoPedido.PENDIENTE);
             request.setTotal(BigDecimal.ZERO);
@@ -156,7 +157,7 @@ public class PedidoController {
         }
 
         try {
-            aplicarFarmaciaSesion(request, session);
+            aplicarDatosSesion(request, session);
             var pedidoActual = service.buscarPorId(id);
             request.setTotal(pedidoActual
                     .map(PedidoResponseDTO::getTotal)
@@ -280,17 +281,24 @@ public class PedidoController {
         model.addAttribute("pedidosPendientes", pendientes);
         model.addAttribute("pedidosEnProceso", confirmados);
         model.addAttribute("pedidosCerrados", cerrados);
+        model.addAttribute("esAdmin", esAdmin);
+        model.addAttribute("vendedorMovimiento", obtenerNombreUsuarioSesion(session));
     }
 
-    private void aplicarFarmaciaSesion(PedidoRequestDTO request, HttpSession session) {
+    private void aplicarDatosSesion(PedidoRequestDTO request, HttpSession session) {
         if (esAdmin(session)) {
             return;
         }
 
         Long idFarmaciaSesion = obtenerIdFarmaciaSesion(session);
+        Long idUsuarioSesion = obtenerIdUsuarioSesion(session);
 
         if (idFarmaciaSesion != null) {
             request.setIdFarmacia(idFarmaciaSesion);
+        }
+
+        if (idUsuarioSesion != null) {
+            request.setIdVendedor(idUsuarioSesion);
         }
     }
 
@@ -324,6 +332,29 @@ public class PedidoController {
         }
 
         return null;
+    }
+
+    private Long obtenerIdUsuarioSesion(HttpSession session) {
+        Object valor = session.getAttribute("idUsuario");
+
+        if (valor instanceof Number number) {
+            return number.longValue();
+        }
+
+        if (valor instanceof String texto && !texto.trim().isEmpty()) {
+            try {
+                return Long.parseLong(texto.trim());
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    private String obtenerNombreUsuarioSesion(HttpSession session) {
+        Object valor = session.getAttribute("nombreUsuario");
+        return valor != null ? valor.toString() : "Usuario logueado";
     }
 
     private String generarSiguienteNumeroPedido() {
