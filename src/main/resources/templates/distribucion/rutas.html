@@ -1,10 +1,240 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
-</head>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{plantilla/layout :: head('Rutas de distribución - SaludVida')}"></head>
 <body>
+<div id="overlay" class="overlay"></div>
+<nav th:replace="~{plantilla/layout :: topbar}"></nav>
+<aside th:replace="~{plantilla/layout :: sidebar}"></aside>
 
+<main id="content" class="content py-10">
+  <div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+      <div>
+        <h1 class="fs-3 mb-1">Rutas de distribución</h1>
+        <p class="text-secondary mb-0">Planifica rutas con vehículo disponible y distribuidor asignado.</p>
+      </div>
+      <span class="badge bg-info-subtle text-info">Distribución</span>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card border-warning bg-warning-subtle p-3">
+          <span class="text-secondary small">Rutas planificadas</span>
+          <strong class="fs-4 text-warning" th:text="${rutasPlanificadas}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-info bg-info-subtle p-3">
+          <span class="text-secondary small">Rutas en camino</span>
+          <strong class="fs-4 text-info" th:text="${rutasEnRuta}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-success bg-success-subtle p-3">
+          <span class="text-secondary small">Rutas cerradas</span>
+          <strong class="fs-4 text-success" th:text="${rutasCerradas}">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div th:if="${#lists.isEmpty(vehiculos)}" class="alert alert-warning">
+      No tienes vehículos disponibles. Para crear una ruta, primero registra o activa un vehículo en estado DISPONIBLE.
+    </div>
+
+    <div th:if="${#lists.isEmpty(distribuidores)}" class="alert alert-warning">
+      No tienes usuarios disponibles para distribución. Crea un usuario activo con rol DISTRIBUIDOR o ADMINISTRADOR.
+    </div>
+
+    <div class="card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h2 class="h5 mb-1" th:text="${editando} ? 'Editar ruta' : 'Nueva ruta'">Nueva ruta</h2>
+          <p class="text-secondary small mb-0">
+            Regla: una ruta inicia PLANIFICADA. No se puede repetir vehículo ni distribuidor activo en la misma fecha.
+          </p>
+        </div>
+        <a th:if="${editando}" th:href="@{/rutas}" class="btn btn-sm btn-outline-secondary">Cancelar edición</a>
+      </div>
+
+      <form method="post"
+            th:action="${editando} ? @{/rutas/{id}(id=${editId})} : @{/rutas}"
+            th:object="${request}"
+            class="row g-3">
+
+        <div class="col-md-3">
+          <label class="form-label">Código de ruta</label>
+          <input class="form-control"
+                 th:field="*{codigoRuta}"
+                 readonly>
+          <div class="form-text">Se asigna automáticamente al guardar.</div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Fecha de ruta</label>
+          <input class="form-control"
+                 type="date"
+                 th:field="*{fechaRuta}"
+                 required>
+          <div class="text-danger small mt-1" th:if="${#fields.hasErrors('fechaRuta')}" th:errors="*{fechaRuta}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Zona</label>
+          <select class="form-select"
+                  th:field="*{zona}"
+                  required>
+            <option value="">Seleccione...</option>
+            <option th:each="zonaItem : ${zonas}" th:value="${zonaItem}" th:text="${zonaItem}">Norte</option>
+          </select>
+          <div class="text-danger small mt-1" th:if="${#fields.hasErrors('zona')}" th:errors="*{zona}"></div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Estado</label>
+          <input class="form-control" th:field="*{estado}" readonly>
+          <div class="form-text">Los cambios de estado se realizan desde el listado.</div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Vehículo</label>
+          <select class="form-select" th:field="*{idVehiculo}" required>
+            <option value="0">Seleccione...</option>
+            <option th:each="vehiculo : ${vehiculos}"
+                    th:value="${vehiculo.idVehiculo}"
+                    th:text="${vehiculo.placa + ' | ' + vehiculo.descripcion + ' | Cap. ' + vehiculo.capacidadPedidos + ' pedidos'}">
+              PBC-1234
+            </option>
+          </select>
+          <div class="text-danger small mt-1" th:if="${#fields.hasErrors('idVehiculo')}" th:errors="*{idVehiculo}"></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Distribuidor / Administrador</label>
+          <select class="form-select" th:field="*{idDistribuidor}" required>
+            <option value="0">Seleccione...</option>
+            <option th:each="distribuidor : ${distribuidores}"
+                    th:value="${distribuidor.idUsuario}"
+                    th:text="${distribuidor.nombres + ' | ' + distribuidor.correo}">
+              Distribuidor
+            </option>
+          </select>
+          <div class="text-danger small mt-1" th:if="${#fields.hasErrors('idDistribuidor')}" th:errors="*{idDistribuidor}"></div>
+        </div>
+
+        <div class="col-md-9">
+          <label class="form-label">Observación</label>
+          <input class="form-control"
+                 th:field="*{observacion}"
+                 placeholder="Indicaciones internas para la ruta">
+        </div>
+
+        <div class="col-md-3 d-flex align-items-end">
+          <button class="btn btn-primary w-100"
+                  type="submit"
+                  th:text="${editando} ? 'Actualizar ruta' : 'Guardar'">
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h2 class="h5 mb-0">Listado de rutas</h2>
+        <span class="text-secondary small" th:text="${totalRutas} + ' registros'">0 registros</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Código</th>
+            <th>Fecha</th>
+            <th>Zona</th>
+            <th>Vehículo</th>
+            <th>Distribuidor</th>
+            <th>Estado</th>
+            <th>Observación</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="ruta : ${rutas}">
+            <td th:text="${ruta.idRuta}">1</td>
+            <td class="fw-semibold" th:text="${ruta.codigoRuta}">RUTA-0001</td>
+            <td th:text="${ruta.fechaRuta}">2026-07-27</td>
+            <td th:text="${ruta.zona}">Norte</td>
+            <td th:text="${nombresVehiculos[ruta.idVehiculo] ?: 'Vehículo no encontrado'}">Vehículo</td>
+            <td th:text="${nombresDistribuidores[ruta.idDistribuidor] ?: 'Distribuidor no encontrado'}">Distribuidor</td>
+            <td>
+              <span class="badge"
+                    th:classappend="${ruta.estado != null and ruta.estado.name() == 'PLANIFICADA'} ? ' bg-warning-subtle text-warning' :
+                                    (${ruta.estado != null and ruta.estado.name() == 'EN_RUTA'} ? ' bg-info-subtle text-info' :
+                                    (${ruta.estado != null and ruta.estado.name() == 'FINALIZADA'} ? ' bg-success-subtle text-success' : ' bg-danger-subtle text-danger'))"
+                    th:text="${ruta.estado}">
+                PLANIFICADA
+              </span>
+            </td>
+            <td th:text="${ruta.observacion}">Observación</td>
+            <td class="text-end text-nowrap">
+              <a th:if="${ruta.estado != null and ruta.estado.name() != 'FINALIZADA' and ruta.estado.name() != 'CANCELADA'}"
+                 th:href="@{/rutas/{id}/editar(id=${ruta.idRuta})}"
+                 class="btn btn-sm btn-outline-primary">
+                Editar
+              </a>
+
+              <a th:if="${ruta.estado != null and ruta.estado.name() == 'PLANIFICADA'}"
+                 th:href="@{/ruta-pedidos(ruta=${ruta.idRuta})}"
+                 class="btn btn-sm btn-outline-info">
+                Asignar pedidos
+              </a>
+
+              <form th:if="${ruta.estado != null and ruta.estado.name() == 'PLANIFICADA'}"
+                    th:action="@{/rutas/{id}/estado(id=${ruta.idRuta})}"
+                    method="post"
+                    class="d-inline">
+                <select class="form-select form-select-sm d-inline-block w-auto" name="estado">
+                  <option value="EN_RUTA">EN_RUTA</option>
+                  <option value="CANCELADA">CANCELADA</option>
+                </select>
+                <button class="btn btn-sm btn-outline-secondary" type="submit">Cambiar</button>
+              </form>
+
+              <form th:if="${ruta.estado != null and ruta.estado.name() == 'EN_RUTA'}"
+                    th:action="@{/rutas/{id}/estado(id=${ruta.idRuta})}"
+                    method="post"
+                    class="d-inline">
+                <select class="form-select form-select-sm d-inline-block w-auto" name="estado">
+                  <option value="FINALIZADA">FINALIZADA</option>
+                  <option value="CANCELADA">CANCELADA</option>
+                </select>
+                <button class="btn btn-sm btn-outline-secondary" type="submit">Cambiar</button>
+              </form>
+
+              <span th:if="${ruta.estado != null and (ruta.estado.name() == 'FINALIZADA' or ruta.estado.name() == 'CANCELADA')}"
+                    class="text-secondary small">
+                Estado final
+              </span>
+            </td>
+          </tr>
+
+          <tr th:if="${#lists.isEmpty(rutas)}">
+            <td colspan="9" class="text-center text-secondary py-4">No existen rutas registradas</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<th:block th:replace="~{plantilla/layout :: scripts}"></th:block>
 </body>
 </html>
