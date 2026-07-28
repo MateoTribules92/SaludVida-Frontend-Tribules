@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{plantilla/layout :: head('Asignación de pedidos a rutas - SaludVida')}"></head>
+<body>
+<div id="overlay" class="overlay"></div>
+<nav th:replace="~{plantilla/layout :: topbar}"></nav>
+<aside th:replace="~{plantilla/layout :: sidebar}"></aside>
+
+<main id="content" class="content py-10">
+  <div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+      <div>
+        <h1 class="fs-3 mb-1">Asignación de pedidos a ruta</h1>
+        <p class="text-secondary mb-0">Agrupa pedidos confirmados en rutas planificadas para iniciar la entrega.</p>
+      </div>
+      <a th:href="@{/rutas}" class="btn btn-sm btn-outline-secondary">← Volver a rutas</a>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="card border-warning bg-warning-subtle p-3">
+          <span class="text-secondary small">Rutas planificadas</span>
+          <strong class="fs-4 text-warning" th:text="${#lists.size(rutas)}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-info bg-info-subtle p-3">
+          <span class="text-secondary small">Pedidos elegibles</span>
+          <strong class="fs-4 text-info" th:text="${pedidosElegibles}">0</strong>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-success bg-success-subtle p-3">
+          <span class="text-secondary small">Pedidos asignados a la ruta</span>
+          <strong class="fs-4 text-success" th:text="${totalAsignaciones}">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div th:if="${#lists.isEmpty(rutas)}" class="alert alert-warning">
+      No existen rutas PLANIFICADAS. Primero crea una ruta en el módulo de Rutas.
+    </div>
+
+    <div class="card p-4 mb-4">
+      <h2 class="h5 mb-1">Seleccionar ruta</h2>
+      <p class="text-secondary small mb-3">Al seleccionar una ruta, se muestran solo pedidos elegibles de la misma zona.</p>
+
+      <div th:if="${pedidoSeleccionado != null}" class="alert alert-info py-2">
+        Pedido seleccionado desde ventas:
+        <strong th:text="${pedidoSeleccionado.numeroPedido}">PED-0001</strong>
+        <span th:if="${zonaPedidoSeleccionado != null}">
+          | Zona del cliente:
+          <strong th:text="${zonaPedidoSeleccionado}">Norte</strong>
+        </span>.
+        El pedido solo aparecerá si su zona coincide con la zona de la ruta.
+      </div>
+
+      <form method="get" th:action="@{/ruta-pedidos}" class="row g-3">
+        <div class="col-md-10">
+          <select class="form-select" name="ruta" required>
+            <option value="">Seleccione una ruta...</option>
+            <option th:each="rutaItem : ${rutas}"
+                    th:value="${rutaItem.idRuta}"
+                    th:selected="${rutaSeleccionada != null and rutaSeleccionada.idRuta == rutaItem.idRuta}"
+                    th:text="${rutaItem.codigoRuta + ' | Zona: ' + rutaItem.zona + ' | Fecha: ' + rutaItem.fechaRuta + ' | Vehículo: ' + (nombresVehiculos[rutaItem.idVehiculo] ?: 'N/D')}">
+              RUTA-0001
+            </option>
+          </select>
+          <input th:if="${pedidoSeleccionado != null}" type="hidden" name="pedido" th:value="${pedidoSeleccionado.idPedido}">
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-outline-primary w-100" type="submit">Cargar</button>
+        </div>
+      </form>
+    </div>
+
+    <div th:if="${rutaSeleccionada != null}" class="card border-info bg-info-subtle p-3 mb-4">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <span class="text-secondary small d-block">Ruta</span>
+          <strong th:text="${rutaSeleccionada.codigoRuta}">RUTA-0001</strong>
+        </div>
+        <div class="col-md-3">
+          <span class="text-secondary small d-block">Zona</span>
+          <strong th:text="${rutaSeleccionada.zona}">Norte</strong>
+        </div>
+        <div class="col-md-3">
+          <span class="text-secondary small d-block">Fecha</span>
+          <strong th:text="${rutaSeleccionada.fechaRuta}">2026-07-27</strong>
+        </div>
+        <div class="col-md-3">
+          <span class="text-secondary small d-block">Vehículo</span>
+          <strong th:text="${nombresVehiculos[rutaSeleccionada.idVehiculo] ?: 'Vehículo no encontrado'}">Vehículo</strong>
+        </div>
+      </div>
+    </div>
+
+    <div th:if="${pedidoSeleccionado != null and rutaSeleccionada != null and !pedidoSeleccionadoCompatible}"
+         class="alert alert-warning">
+      El pedido
+      <strong th:text="${pedidoSeleccionado.numeroPedido}">PED-0001</strong>
+      no coincide con esta ruta:
+      zona del pedido
+      <strong th:text="${zonaPedidoSeleccionado ?: 'Sin zona'}">Norte</strong>
+      vs. zona de la ruta
+      <strong th:text="${rutaSeleccionada.zona}">Sur</strong>.
+      Selecciona una ruta de la misma zona o cambia la zona del cliente.
+    </div>
+
+    <div class="card p-4 mb-4">
+      <h2 class="h5 mb-1">Agregar pedido a la ruta</h2>
+      <p class="text-secondary small mb-3">
+        Reglas: ruta PLANIFICADA, pedido CONFIRMADO o EN_PREPARACION, misma zona del cliente y capacidad disponible.
+      </p>
+
+      <form method="post" th:action="@{/ruta-pedidos}" th:object="${request}" class="row g-3">
+        <div class="col-md-5">
+          <label class="form-label">Ruta</label>
+          <select class="form-select" th:field="*{idRuta}" required>
+            <option value="0">Seleccione...</option>
+            <option th:each="rutaItem : ${rutas}"
+                    th:value="${rutaItem.idRuta}"
+                    th:text="${rutaItem.codigoRuta + ' | ' + rutaItem.zona + ' | ' + rutaItem.fechaRuta}">
+              RUTA-0001
+            </option>
+          </select>
+          <div class="text-danger small mt-1" th:if="${#fields.hasErrors('idRuta')}" th:errors="*{idRuta}"></div>
+        </div>
+
+        <div class="col-md-5">
+          <label class="form-label">Pedido</label>
+          <select class="form-select" th:field="*{idPedido}" required>
+            <option value="0">Seleccione...</option>
+            <option th:each="pedido : ${pedidos}"
+                    th:value="${pedido.idPedido}"
+                    th:selected="${request.idPedido == pedido.idPedido}"
+                    th:text="${pedido.numeroPedido + ' | Zona: ' + (zonasPedidos[pedido.idPedido] ?: 'Sin zona') + ' | Cliente: ' + (nombresClientes[pedido.idCliente] ?: 'N/D') + ' | Total: $' + pedido.total}">
+              PED-0001
+            </option>
+          </select>
+          <div class="form-text" th:if="${rutaSeleccionada != null}">
+            Se muestran solo pedidos CONFIRMADOS o EN_PREPARACION cuya zona coincida con
+            <strong th:text="${rutaSeleccionada.zona}">Norte</strong>.
+          </div>
+          <div th:if="${rutaSeleccionada != null and #lists.isEmpty(pedidos)}" class="alert alert-warning mt-2 mb-0 py-2">
+            No hay pedidos disponibles para la zona
+            <strong th:text="${rutaSeleccionada.zona}">Norte</strong>.
+            Verifica que el pedido esté CONFIRMADO o EN_PREPARACION, que no esté asignado a otra ruta
+            y que la zona del cliente coincida.
+          </div>
+          <div class="text-danger small mt-1" th:if="${#fields.hasErrors('idPedido')}" th:errors="*{idPedido}"></div>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Orden</label>
+          <input class="form-control" type="number" min="1" th:field="*{ordenEntrega}" required>
+          <div class="text-danger small mt-1" th:if="${#fields.hasErrors('ordenEntrega')}" th:errors="*{ordenEntrega}"></div>
+        </div>
+
+        <div class="col-12">
+          <button class="btn btn-primary px-5" type="submit">Asignar pedido</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h2 class="h5 mb-0">Pedidos asignados</h2>
+        <span class="text-secondary small" th:text="${totalAsignaciones} + ' registros'">0 registros</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Ruta</th>
+            <th>Pedido</th>
+            <th>Orden</th>
+            <th>Fecha asignación</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="item : ${asignaciones}">
+            <td th:text="${item.idRutaPedido}">1</td>
+            <td th:text="${nombresRutas[item.idRuta] ?: 'Ruta no encontrada'}">Ruta</td>
+            <td class="fw-semibold" th:text="${nombresPedidos[item.idPedido] ?: 'Pedido no encontrado'}">Pedido</td>
+            <td th:text="${item.ordenEntrega}">1</td>
+            <td th:text="${item.fechaAsignacion}">2026-07-27T12:00</td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(asignaciones)}">
+            <td colspan="5" class="text-center text-secondary py-4">No existen pedidos asignados a rutas</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<th:block th:replace="~{plantilla/layout :: scripts}"></th:block>
+</body>
+</html>
